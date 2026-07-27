@@ -56,6 +56,14 @@ const PALETTES: Record<PaletteId, { accent: string; key: string; soft: string; b
 };
 const EMPHASIS_VARIANTS: EmphasisVariantId[] = ["color", "marker", "colorMarker", "strong", "underline"];
 const INTRO_TREATMENTS: IntroTreatmentId[] = ["none", "color", "bold", "marker"];
+const TEXT_COLORS = [
+  "#171717", "#5f6368", "#d93025", "#e37400", "#f9ab00",
+  "#188038", "#00897b", "#1a73e8", "#673ab7", "#c2185b",
+];
+const BACKGROUND_COLORS = [
+  "#ffffff", "#f1f3f4", "#fce8e6", "#fef7e0", "#fff2bf",
+  "#e6f4ea", "#e0f2f1", "#e8f0fe", "#f3e8fd", "#fce8f3",
+];
 
 const UI = {
   zh: {
@@ -67,6 +75,7 @@ const UI = {
     tip: "这是富文本输入框：从原系统直接粘贴，会保留链接、表格和原有框线，再继续复制到 Gmail。",
     result: "自动排版结果", current: "当前", random: "随机颜色＋荧光笔＋粗体", changed: "已随机",
     toolbar: "手动微调工具", remove: "清除格式", bold: "加粗", red: "强调色", blue: "辅助色", highlight: "底色",
+    colors: "颜色", textColor: "文字颜色", backgroundColor: "背景颜色", defaultColor: "恢复默认黑色", noHighlight: "取消背景色", customColor: "自定义颜色", undoFormat: "撤销手动格式", redoFormat: "重做手动格式",
     copied: "已复制，可粘贴到 Gmail", copy: "复制富文本格式",
     foot1: "版式与结构保持不变；随机按钮只改变重点颜色、荧光笔和粗体效果。",
     foot2: "所有内容只在当前浏览器中处理，不会上传。",
@@ -89,6 +98,7 @@ const UI = {
     tip: "リッチテキスト入力欄です。元のシステムから直接貼り付けると、リンク・表・元の枠線を保持したままGmailへコピーできます。",
     result: "自動整形結果", current: "現在", random: "色・マーカー・太字をランダム", changed: "変更しました",
     toolbar: "手動調整ツール", remove: "書式をクリア", bold: "太字", red: "強調色", blue: "補助色", highlight: "背景色",
+    colors: "カラー", textColor: "文字色", backgroundColor: "背景色", defaultColor: "標準の黒に戻す", noHighlight: "背景色を解除", customColor: "カスタムカラー", undoFormat: "手動書式を元に戻す", redoFormat: "手動書式をやり直す",
     copied: "コピー済み・Gmailへ貼り付け可能", copy: "リッチテキストをコピー",
     foot1: "レイアウトと構成はそのまま、ランダムボタンでは強調色・マーカー・太字だけが変わります。",
     foot2: "内容はブラウザ内のみで処理され、アップロードされません。",
@@ -111,6 +121,7 @@ const UI = {
     tip: "This is a rich-text input. Paste directly from the source system to keep links, tables, and original borders through to Gmail.",
     result: "Formatted result", current: "Current", random: "Random color + marker + bold", changed: "Randomized",
     toolbar: "Manual formatting tools", remove: "Clear format", bold: "Bold", red: "Emphasis color", blue: "Secondary color", highlight: "Highlight",
+    colors: "Colors", textColor: "Text color", backgroundColor: "Background color", defaultColor: "Restore default black", noHighlight: "Remove background", customColor: "Custom color", undoFormat: "Undo manual format", redoFormat: "Redo manual format",
     copied: "Copied and ready for Gmail", copy: "Copy rich text",
     foot1: "Layout and structure stay fixed; randomization changes only emphasis color, marker and bold treatment.",
     foot2: "Everything is processed locally in this browser and is not uploaded.",
@@ -761,8 +772,11 @@ export default function Home() {
   const [fullProfileCards, setFullProfileCards] = useState(true);
   const [blackAngleTitles, setBlackAngleTitles] = useState(true);
   const [randomLabel, setRandomLabel] = useState("");
+  const [colorMenuOpen, setColorMenuOpen] = useState(false);
   const sourceInputRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
+  const colorMenuRef = useRef<HTMLDivElement>(null);
+  const savedSelectionRef = useRef<Range | null>(null);
   const previewScrollTopRef = useRef(0);
   const t = UI[lang];
   const { palette, emphasisVariant } = appearanceHistory[appearanceIndex];
@@ -803,6 +817,17 @@ export default function Home() {
   useEffect(() => {
     document.documentElement.lang = lang === "zh" ? "zh-CN" : lang;
   }, [lang]);
+
+  useEffect(() => {
+    if (!colorMenuOpen) return;
+    function closeColorMenu(event: MouseEvent) {
+      if (!colorMenuRef.current?.contains(event.target as Node)) {
+        setColorMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", closeColorMenu);
+    return () => document.removeEventListener("mousedown", closeColorMenu);
+  }, [colorMenuOpen]);
 
   useLayoutEffect(() => {
     const preview = previewRef.current;
@@ -894,9 +919,30 @@ export default function Home() {
     setAppearanceIndex((current) => Math.min(appearanceHistory.length - 1, current + 1));
   }
 
-  function apply(command: string, value?: string) {
-    previewRef.current?.focus();
+  function savePreviewSelection() {
+    const preview = previewRef.current;
+    const selection = window.getSelection();
+    if (!preview || !selection?.rangeCount) return;
+    const range = selection.getRangeAt(0);
+    if (preview.contains(range.commonAncestorContainer)) {
+      savedSelectionRef.current = range.cloneRange();
+    }
+  }
+
+  function restorePreviewSelection() {
+    const selection = window.getSelection();
+    const range = savedSelectionRef.current;
+    if (!selection || !range) return;
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }
+
+  function apply(command: string, value?: string, closeMenu = false) {
+    restorePreviewSelection();
+    previewRef.current?.focus({ preventScroll: true });
     document.execCommand(command, false, value);
+    savePreviewSelection();
+    if (closeMenu) setColorMenuOpen(false);
   }
 
   function syncSourceFromEditor() {
@@ -1118,12 +1164,84 @@ export default function Home() {
             <label><input type="checkbox" checked={blackAngleTitles} onChange={(event) => setBlackAngleTitles(event.target.checked)} /><span>{t.blackAngleTitles}</span></label>
           </div>
           <div className="toolbar" aria-label={t.toolbar}>
-            <button onClick={() => apply("bold")} title={t.bold}><b>B</b></button>
-            <button onClick={() => apply("foreColor", PALETTES[palette].key)} title={t.red}><span className="colorA" style={{color: PALETTES[palette].key, borderColor: PALETTES[palette].key}}>A</span></button>
-            <button onClick={() => apply("foreColor", PALETTES[palette].accent)} title={t.blue}><span className="colorA" style={{color: PALETTES[palette].accent, borderColor: PALETTES[palette].accent}}>A</span></button>
-            <button onClick={() => apply("backColor", PALETTES[palette].soft)} title={t.highlight}><span className="highlightA" style={{background: PALETTES[palette].soft}}>A</span></button>
+            <button onMouseDown={(event) => { event.preventDefault(); savePreviewSelection(); }} onClick={() => apply("bold")} title={t.bold}><b>B</b></button>
+            <div className="colorMenuWrap" ref={colorMenuRef}>
+              <button
+                className={colorMenuOpen ? "active" : ""}
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                  savePreviewSelection();
+                }}
+                onClick={() => setColorMenuOpen((current) => !current)}
+                title={t.colors}
+                aria-expanded={colorMenuOpen}
+              >
+                <span className="colorA" style={{ color: PALETTES[palette].key, borderColor: PALETTES[palette].key }}>A</span>
+                <span className="menuCaret">▾</span>
+              </button>
+              {colorMenuOpen && (
+                <div className="colorPopover" role="dialog" aria-label={t.colors}>
+                  <section>
+                    <div className="colorSectionHead">
+                      <b>{t.textColor}</b>
+                      <button onMouseDown={(event) => event.preventDefault()} onClick={() => apply("foreColor", "#171717", true)}>{t.defaultColor}</button>
+                    </div>
+                    <div className="colorGrid">
+                      {TEXT_COLORS.map((color) => (
+                        <button
+                          key={color}
+                          className="colorSwatch"
+                          style={{ background: color }}
+                          aria-label={`${t.textColor} ${color}`}
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={() => apply("foreColor", color, true)}
+                        />
+                      ))}
+                      <label className="customColor" title={t.customColor}>
+                        <span>＋</span>
+                        <input
+                          type="color"
+                          aria-label={`${t.textColor} ${t.customColor}`}
+                          onMouseDown={() => savePreviewSelection()}
+                          onChange={(event) => apply("foreColor", event.target.value, true)}
+                        />
+                      </label>
+                    </div>
+                  </section>
+                  <section>
+                    <div className="colorSectionHead">
+                      <b>{t.backgroundColor}</b>
+                      <button onMouseDown={(event) => event.preventDefault()} onClick={() => apply("backColor", "transparent", true)}>{t.noHighlight}</button>
+                    </div>
+                    <div className="colorGrid">
+                      {BACKGROUND_COLORS.map((color) => (
+                        <button
+                          key={color}
+                          className="colorSwatch backgroundSwatch"
+                          style={{ background: color }}
+                          aria-label={`${t.backgroundColor} ${color}`}
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={() => apply("backColor", color, true)}
+                        />
+                      ))}
+                      <label className="customColor" title={t.customColor}>
+                        <span>＋</span>
+                        <input
+                          type="color"
+                          aria-label={`${t.backgroundColor} ${t.customColor}`}
+                          onMouseDown={() => savePreviewSelection()}
+                          onChange={(event) => apply("backColor", event.target.value, true)}
+                        />
+                      </label>
+                    </div>
+                  </section>
+                </div>
+              )}
+            </div>
             <span className="paletteDots" title={t.palettes[paletteIndex]}><i style={{background: PALETTES[palette].accent}} /><i style={{background: PALETTES[palette].key}} /><i style={{background: PALETTES[palette].soft}} /></span>
-            <button onClick={() => apply("removeFormat")} title={t.remove}>{t.remove}</button>
+            <button onMouseDown={(event) => { event.preventDefault(); savePreviewSelection(); }} onClick={() => apply("undo")} title={t.undoFormat} aria-label={t.undoFormat}>↶</button>
+            <button onMouseDown={(event) => { event.preventDefault(); savePreviewSelection(); }} onClick={() => apply("redo")} title={t.redoFormat} aria-label={t.redoFormat}>↷</button>
+            <button onMouseDown={(event) => { event.preventDefault(); savePreviewSelection(); }} onClick={() => apply("removeFormat")} title={t.remove}>{t.remove}</button>
           </div>
           <div
             ref={previewRef}
