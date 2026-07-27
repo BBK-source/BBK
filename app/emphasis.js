@@ -12,7 +12,7 @@ function restoreTokens(text, values, open, close) {
   return text.replace(pattern, (_, index) => values[Number(index)] ?? "");
 }
 
-function applyEmphasis(html, color, scope, includeEntities = true, decoration = {}) {
+function applyEmphasis(html, color, scope, includeEntities = true, decoration = {}, includeRoles = true) {
   const htmlTags = [];
   const marks = [];
   let output = html.replace(/<[^>]+>/g, (tag) => {
@@ -83,16 +83,18 @@ function applyEmphasis(html, color, scope, includeEntities = true, decoration = 
       (_, prefix, company) => `${prefix}${mark(company)}`,
     );
 
-    // Employment status and seniority work in profile headers, introductions and Q&A.
-    markMatch(
-      /\b(?:Global Head of Procurement|Chief [A-Za-z&/\- ]{2,35} Officer|Executive Vice President|Senior Vice President|Vice President|Managing Director|General Manager|Project Manager|Senior Director|Director|Manager|Head of [A-Za-z&/\- ]{2,35}|Consultant|Engineer|Current|Former|Present|CEO|CFO|COO|CTO|EVP|SVP|VP)\b/gi,
-    );
-    markMatch(
-      /(?:代表取締役|取締役|執行役員|本部長|部長|課長|責任者|プロジェクトマネージャー|マネージャー|ディレクター|コンサルタント|エンジニア|現職|現任|元職)/g,
-    );
-    markMatch(
-      /(?:董事长|首席执行官|首席财务官|总裁|副总裁|总经理|副总经理|总监|负责人|项目经理|经理|主管|顾问|工程师|现任|曾任|前任)/g,
-    );
+    if (includeRoles) {
+      // Employment status and seniority work in introductions and Q&A.
+      markMatch(
+        /\b(?:Global Head of Procurement|Chief [A-Za-z&/\- ]{2,35} Officer|Executive Vice President|Senior Vice President|Vice President|Managing Director|General Manager|Project Manager|Senior Director|Director|Manager|Head of [A-Za-z&/\- ]{2,35}|Consultant|Engineer|Current|Former|Present|CEO|CFO|COO|CTO|EVP|SVP|VP)\b/gi,
+      );
+      markMatch(
+        /(?:代表取締役|取締役|執行役員|本部長|部長|課長|責任者|プロジェクトマネージャー|マネージャー|ディレクター|コンサルタント|エンジニア|現職|現任|元職)/g,
+      );
+      markMatch(
+        /(?:董事长|首席执行官|首席财务官|总裁|副总裁|总经理|副总经理|总监|负责人|项目经理|经理|主管|顾问|工程师|现任|曾任|前任)/g,
+      );
+    }
   }
 
   if (scope === "intro" || scope === "qa") {
@@ -131,6 +133,10 @@ function applyEmphasis(html, color, scope, includeEntities = true, decoration = 
 
 export function emphasizeCompaniesText(html, color, enabled = true, decoration = {}) {
   return enabled ? applyEmphasis(html, color, "companies", true, decoration) : html;
+}
+
+export function emphasizeCompanyNamesText(html, color, enabled = true, decoration = {}) {
+  return enabled ? applyEmphasis(html, color, "companies", true, decoration, false) : html;
 }
 
 export function emphasizeIntroText(html, color, includeEntities = true, decoration = {}) {
