@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { ClipboardEvent } from "react";
 import {
+  emphasizeCompanyNamesText,
   emphasizeCompaniesText,
   emphasizeQaText,
 } from "./emphasis.js";
@@ -292,6 +293,11 @@ function emphasizeCompanies(text: string, style: StyleId, palette: PaletteId, en
   return emphasizeCompaniesText(text, PALETTES[palette].key, enabled, emphasisDecoration(palette, variant));
 }
 
+function emphasizeExpertTitleCompanies(text: string, style: StyleId, palette: PaletteId, enabled = true, variant: EmphasisVariantId = "color") {
+  if (style === "minimal") return text;
+  return emphasizeCompanyNamesText(text, PALETTES[palette].key, enabled, emphasisDecoration(palette, variant));
+}
+
 function emphasizeQa(text: string, style: StyleId, palette: PaletteId, includeEntities: boolean, variant: EmphasisVariantId) {
   if (style === "minimal") return text;
   return emphasizeQaText(text, PALETTES[palette].key, includeEntities, emphasisDecoration(palette, variant));
@@ -378,7 +384,9 @@ function formatLine(
     const bullet = style === "list" || style === "classic" || style === "qa" || style === "minimal" || useCard || compactExpert
       ? `<span style="position:absolute;left:${compactExpert ? "7px" : "9px"};color:#151515">•</span>`
       : "";
-    const expertRest = style === "minimal" ? rest : emphasizeCompanies(rest, style, palette, options.entityHighlights, options.emphasisVariant);
+    const expertRest = style === "minimal"
+      ? rest
+      : emphasizeExpertTitleCompanies(rest, style, palette, options.entityHighlights, options.emphasisVariant);
     return `<div style="${listCss}">${bullet}<span style="color:${accent}">${id.replace(/^[-•]\s*/, "")}</span>${expertRest}</div>`;
   }
   if (/^(Customers?|CUSTOMERS?)[-:| ｜]/i.test(safe)) {
