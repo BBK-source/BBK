@@ -2,10 +2,10 @@ const EXPERT_LINE_RE =
   /^(?:[-•]\s*)?(?:#(?:[A-Z][A-Z0-9]*|\d+)(?:[.-]\d+)*|[A-Z][A-Z0-9]*(?:[.-]\d+)+)\s*[-–]/i;
 
 export const QUESTION_PREFIX_RE =
-  /^(?:(?:Q|Question)\s*\d*|質問\s*\d+|问题\s*\d+|問題\s*\d+|问\s*\d+|問\s*\d+|\d{1,2})\s*[.:：．、]\s*/i;
+  /^(?:(?:Q|Question)\s*\d*|質問\s*\d+|问题\s*\d+|問題\s*\d+|问\s*\d+|問\s*\d+|\d{1,2})\s*[.:：．、,，)）]\s*/i;
 
 export const ANSWER_PREFIX_RE =
-  /^(?:(?:A|Answer)\s*\d*|回答\s*\d*|答\s*\d+)\s*[.:：．、]\s*/i;
+  /^(?:(?:A|Answer)\s*\d*|回答\s*\d*|答\s*\d+)\s*[.:：．、,，)）]\s*/i;
 
 export const ARROW_ANSWER_RE = /^(?:>>+|→|⇒|->|=>)\s*/;
 
