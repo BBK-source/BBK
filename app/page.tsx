@@ -352,6 +352,7 @@ function formatLine(
   compactExpert = false,
   bookNowUrl?: string,
   lineLinks: RichLink[] = [],
+  qaEnd = false,
 ) {
   const raw = line.trim();
   const safe = applyLineLinks(escapeHtml(line), lineLinks, palette);
@@ -425,7 +426,9 @@ function formatLine(
     const margin = qaStart ? (style === "qa" ? "margin-top:11px;" : "margin-top:7px;") : "";
     const padding = style === "qa" ? (qaStart ? "7px 8px" : "2px 8px 6px") : style === "list" ? "4px 6px" : "3px 6px";
     const border = style === "minimal" ? "#9aa5ad" : colors.accent;
-    const extra = style === "qa" ? `border-top:1px solid ${colors.border};border-right:1px solid ${colors.border}` : "";
+    const extra = style === "qa"
+      ? `${qaStart ? `border-top:1px solid ${colors.border};` : ""}border-right:1px solid ${colors.border}`
+      : "";
     return `<div style="line-height:1.55;background:${bg};${margin}padding:${padding};border-left:${style === "minimal" ? "2px" : "3px"} solid ${border};${extra}">${label ? `<b>${label}</b> ` : ""}${body}</div>`;
   }
   if (qaRole === "answer") {
@@ -442,7 +445,9 @@ function formatLine(
     const padding = style === "qa"
       ? onlyLabel ? "8px 8px 0" : qaStart ? "7px 8px" : "2px 8px 7px"
       : onlyLabel ? "7px 5px 0" : qaStart ? "4px 6px" : "1px 6px 5px";
-    const extra = style === "qa" ? `border-left:3px solid ${colors.accent};border-right:1px solid ${colors.border};border-bottom:1px solid ${colors.border}` : "";
+    const extra = style === "qa"
+      ? `border-left:3px solid ${colors.accent};border-right:1px solid ${colors.border};${qaEnd ? `border-bottom:1px solid ${colors.border};` : ""}`
+      : "";
     const answerBody = emphasizeQa(body, style, palette, options.entityHighlights, options.emphasisVariant);
     return `<div style="color:${keyColor};font-weight:${onlyLabel ? "700" : weight};line-height:1.6;background:${bg};padding:${padding};${extra}">${prefix ? `<b>${prefix}</b>${body ? " " : ""}` : ""}${answerBody}</div>`;
   }
@@ -723,7 +728,14 @@ function formatText(
     let qaStart = false;
 
     if (!trimmed) {
-      qaFlow = null;
+      const answerFollows =
+        ANSWER_PREFIX_RE.test(nextNonBlank) || ARROW_ANSWER_RE.test(nextNonBlank);
+      if (qaFlow === "question" && !answerFollows) {
+        qaFlow = null;
+      }
+      if (qaFlow) {
+        continue;
+      }
     } else if (explicitQuestion) {
       section = "qa";
       qaFlow = "question";
@@ -737,6 +749,18 @@ function formatText(
     } else if (section === "qa" && qaFlow) {
       qaRole = qaFlow;
     }
+
+    const nextStartsNewSection =
+      nextNonBlankIndex < 0
+      || QUESTION_PREFIX_RE.test(nextNonBlank)
+      || isScreenedHeading(nextNonBlank)
+      || isEmploymentHeading(nextNonBlank)
+      || isAvailabilityHeading(nextNonBlank)
+      || isAvailabilityLine(nextNonBlank)
+      || isUnavailableAvailabilityLine(nextNonBlank)
+      || EXPERT_LINE_RE.test(nextNonBlank)
+      || /^Book Now$/i.test(nextNonBlank);
+    const qaEnd = qaRole === "answer" && nextStartsNewSection;
 
     let bookNowUrl: string | undefined;
     if (/^Book Now$/i.test(trimmed)) {
@@ -755,6 +779,7 @@ function formatText(
       false,
       bookNowUrl,
       lineLinks,
+      qaEnd,
     );
 
     parts.push(rendered);
