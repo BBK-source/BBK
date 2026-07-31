@@ -30,6 +30,7 @@ jobs:
         run: |
           mkdir -p public
           base64 --decode assets/bbk-work-buddy.png.b64 > public/bbk-work-buddy.png
+          base64 --decode assets/bbk-team-cameo.png.b64 > public/bbk-team-cameo.png
 
       - name: Install dependencies
         run: npm install
@@ -39,8 +40,6 @@ jobs:
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
-        with:
-          enablement: true
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
