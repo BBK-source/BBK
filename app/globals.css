@@ -164,8 +164,8 @@ h1 { margin: 0; font-size: clamp(32px, 3.2vw, 52px); letter-spacing: -.045em; li
   border-color: var(--blue-dark); background: var(--blue-dark); color: white; font-weight: 750;
 }
 .preview {
-  flex: 1 1 auto; min-height: 0; padding: 24px; outline: 0; overflow-x: hidden; overflow-y: scroll;
-  font-family: Arial, "Noto Sans JP", sans-serif; font-size: 14px; color: #171717; background: white;
+  flex: 1 1 auto; min-height: 0; padding: 18px; outline: 0; overflow-x: hidden; overflow-y: scroll;
+  font-family: Arial, "Noto Sans JP", sans-serif; font-size: 12px; line-height: 1.45; color: #171717; background: white;
   overscroll-behavior: contain; scrollbar-gutter: stable;
 }
 .sourceEditor::-webkit-scrollbar, .preview::-webkit-scrollbar { width: 11px; }
@@ -174,8 +174,7 @@ h1 { margin: 0; font-size: clamp(32px, 3.2vw, 52px); letter-spacing: -.045em; li
   background: #aab7c0; border: 3px solid #f1f4f6; border-radius: 999px;
 }
 .sourceEditor::-webkit-scrollbar-thumb:hover, .preview::-webkit-scrollbar-thumb:hover { background: #8295a2; }
-.preview.style-list { padding: 20px; font-size: 14px; }
-.preview.style-qa { font-size: 14px; }
+.preview.style-list { padding: 16px; }
 .preview.style-minimal { color: #26343d; }
 .preview:focus { box-shadow: inset 0 0 0 2px rgba(95,137,165,.18); }
 footer {
