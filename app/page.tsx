@@ -41,6 +41,7 @@ type FormatOptions = {
 type RichLink = { label: string; href: string };
 
 const STYLE_IDS: StyleId[] = ["smart", "classic", "list", "qa", "minimal"];
+const VISIBLE_STYLE_IDS: StyleId[] = ["smart", "list", "qa"];
 const LANGUAGE_STORAGE_KEY = "bbk-bunken-language";
 const ENTITY_HIGHLIGHT_STORAGE_KEY = "bbk-bunken-entity-highlights";
 const EXPERT_LINE_RE = /^(?:[-•]\s*)?(?:#(?:[A-Z][A-Z0-9]*|\d+)(?:[.-]\d+)*|[A-Z][A-Z0-9]*(?:[.-]\d+)+)\s*[-–]/i;
@@ -57,14 +58,6 @@ const PALETTES: Record<PaletteId, { accent: string; key: string; soft: string; b
 };
 const EMPHASIS_VARIANTS: EmphasisVariantId[] = ["color", "marker", "colorMarker", "strong", "underline"];
 const INTRO_TREATMENTS: IntroTreatmentId[] = ["none", "color", "bold", "marker"];
-const TEXT_COLORS = [
-  "#171717", "#5f6368", "#d93025", "#e37400", "#f9ab00",
-  "#188038", "#00897b", "#1a73e8", "#673ab7", "#c2185b",
-];
-const BACKGROUND_COLORS = [
-  "#ffffff", "#f1f3f4", "#fce8e6", "#fef7e0", "#fff2bf",
-  "#e6f4ea", "#e0f2f1", "#e8f0fe", "#f3e8fd", "#fce8f3",
-];
 
 const UI = {
   zh: {
@@ -74,20 +67,16 @@ const UI = {
     paste: "粘贴", format: "自动排版", copyStep: "复制到 Gmail",
     source: "粘贴原文", clear: "清空", placeholder: "在这里粘贴准备发送的邮件内容…",
     tip: "这是富文本输入框：从原系统直接粘贴，会保留链接、表格和原有框线，再继续复制到 Gmail。",
-    result: "自动排版结果", current: "当前", random: "随机颜色＋荧光笔＋粗体", changed: "已随机",
-    toolbar: "手动微调工具", remove: "清除格式", bold: "加粗", red: "强调色", blue: "辅助色", highlight: "底色",
-    colors: "颜色", textColor: "文字颜色", backgroundColor: "背景颜色", defaultColor: "恢复默认黑色", noHighlight: "取消背景色", customColor: "自定义颜色", undoFormat: "撤销手动格式", redoFormat: "重做手动格式",
+    result: "自动排版结果", current: "当前", formatMode: "排版", random: "换个配色", changed: "已更换",
     copied: "已复制，可粘贴到 Gmail", copy: "复制富文本格式",
     foot1: "版式与结构保持不变；随机按钮只改变重点颜色、荧光笔和粗体效果。",
     foot2: "所有内容只在当前浏览器中处理，不会上传。",
-    styles: ["智能匹配", "重点卡片", "紧凑名单", "SQ 卡片", "黑白极简"],
+    styles: ["自动排版", "重点卡片", "专家名单", "Q&A", "极简"],
     notes: ["按内容自动选择完整结构", "整份专家资料以重点卡片呈现", "同一 Angle 下压缩成名单", "问题与回答使用分层色块", "去掉彩色强调与外框"],
     palettes: ["TB 经典", "海洋蓝", "森林绿", "梅紫", "暖琥珀", "商务灰"],
     emphasisStyles: ["彩色粗体", "荧光笔", "彩色荧光", "黑色重粗", "彩色下划线"],
-    options: "结构选项", introLabel: "介绍文", introTreatments: ["不标记", "全部标色", "全部加粗", "全部荧光"], entityHighlight: "公司／职位高亮（中日英）", expertCards: "专家名单行框", angleGroups: "按 Angle 分组",
+    options: "简易设置", introLabel: "介绍文", introTreatments: ["无", "标色", "加粗", "荧光"], entityHighlight: "自动标记公司／职位",
     previous: "上一个", next: "下一个",
-    fullProfileCards: "每位专家整份资料加大框", blackAngleTitles: "Angle 标题黑色",
-    quickLayouts: "一键结构", profileLayout: "每人整体大框", listLayout: "同 Angle 名单", cleanLayout: "无框简洁",
     linksKept: "已保留链接",
   },
   ja: {
@@ -97,20 +86,16 @@ const UI = {
     paste: "貼り付け", format: "自動整形", copyStep: "Gmailへコピー",
     source: "原文を貼り付け", clear: "クリア", placeholder: "送信予定のメール本文を貼り付けてください…",
     tip: "リッチテキスト入力欄です。元のシステムから直接貼り付けると、リンク・表・元の枠線を保持したままGmailへコピーできます。",
-    result: "自動整形結果", current: "現在", random: "色・マーカー・太字をランダム", changed: "変更しました",
-    toolbar: "手動調整ツール", remove: "書式をクリア", bold: "太字", red: "強調色", blue: "補助色", highlight: "背景色",
-    colors: "カラー", textColor: "文字色", backgroundColor: "背景色", defaultColor: "標準の黒に戻す", noHighlight: "背景色を解除", customColor: "カスタムカラー", undoFormat: "手動書式を元に戻す", redoFormat: "手動書式をやり直す",
+    result: "自動整形結果", current: "現在", formatMode: "レイアウト", random: "配色を変更", changed: "変更済み",
     copied: "コピー済み・Gmailへ貼り付け可能", copy: "リッチテキストをコピー",
     foot1: "レイアウトと構成はそのまま、ランダムボタンでは強調色・マーカー・太字だけが変わります。",
     foot2: "内容はブラウザ内のみで処理され、アップロードされません。",
-    styles: ["自動判別", "重点カード", "コンパクト一覧", "SQカード", "モノクロ簡潔"],
+    styles: ["自動", "重点カード", "専門家リスト", "Q&A", "シンプル"],
     notes: ["内容に合わせて構成も自動選択", "一名ずつ全体を重点カードで表示", "同じAngle内をコンパクトな一覧に整理", "質問と回答を色付きカードで分ける", "色の強調と外枠を省いた簡潔表示"],
     palettes: ["TBクラシック", "オーシャン", "フォレスト", "プラム", "アンバー", "ビジネスグレー"],
     emphasisStyles: ["カラー太字", "マーカー", "カラー＋マーカー", "黒の太字", "カラー下線"],
-    options: "構成オプション", introLabel: "紹介文", introTreatments: ["なし", "全体カラー", "全体太字", "全体マーカー"], entityHighlight: "会社・役職を強調（中日英）", expertCards: "一覧の行枠", angleGroups: "Angleごとにグループ化",
+    options: "簡単設定", introLabel: "紹介文", introTreatments: ["なし", "カラー", "太字", "マーカー"], entityHighlight: "会社・役職を自動強調",
     previous: "前へ", next: "次へ",
-    fullProfileCards: "各エキスパートの全体を枠表示", blackAngleTitles: "Angle見出しを黒字",
-    quickLayouts: "クイック構成", profileLayout: "一名ずつ全体枠", listLayout: "Angle別一覧", cleanLayout: "枠なし",
     linksKept: "リンクを保持",
   },
   en: {
@@ -120,20 +105,16 @@ const UI = {
     paste: "Paste", format: "Auto-format", copyStep: "Copy to Gmail",
     source: "Paste source text", clear: "Clear", placeholder: "Paste the email content you want to send…",
     tip: "This is a rich-text input. Paste directly from the source system to keep links, tables, and original borders through to Gmail.",
-    result: "Formatted result", current: "Current", random: "Random color + marker + bold", changed: "Randomized",
-    toolbar: "Manual formatting tools", remove: "Clear format", bold: "Bold", red: "Emphasis color", blue: "Secondary color", highlight: "Highlight",
-    colors: "Colors", textColor: "Text color", backgroundColor: "Background color", defaultColor: "Restore default black", noHighlight: "Remove background", customColor: "Custom color", undoFormat: "Undo manual format", redoFormat: "Redo manual format",
+    result: "Formatted result", current: "Current", formatMode: "Layout", random: "Try another color", changed: "Changed",
     copied: "Copied and ready for Gmail", copy: "Copy rich text",
     foot1: "Layout and structure stay fixed; randomization changes only emphasis color, marker and bold treatment.",
     foot2: "Everything is processed locally in this browser and is not uploaded.",
-    styles: ["Smart match", "Feature card", "Compact list", "SQ cards", "Monochrome clean"],
+    styles: ["Auto", "Feature card", "Expert list", "Q&A", "Simple"],
     notes: ["Automatically selects both structure and styling", "Frames each full expert profile as a feature card", "Compresses experts under each angle into a list", "Separates questions and answers into colored cards", "Removes colored emphasis and outer frames"],
     palettes: ["TB classic", "Ocean", "Forest", "Plum", "Amber", "Business gray"],
     emphasisStyles: ["Color bold", "Highlighter", "Color + highlight", "Strong black", "Color underline"],
-    options: "Structure options", introLabel: "Introduction", introTreatments: ["None", "All color", "All bold", "All highlight"], entityHighlight: "Highlight companies & roles (ZH/JA/EN)", expertCards: "Expert list row frames", angleGroups: "Group by angle",
+    options: "Simple settings", introLabel: "Introduction", introTreatments: ["None", "Color", "Bold", "Highlight"], entityHighlight: "Auto-highlight companies & roles",
     previous: "Previous", next: "Next",
-    fullProfileCards: "Frame each expert's full profile", blackAngleTitles: "Black angle headings",
-    quickLayouts: "Quick layout", profileLayout: "One full frame per expert", listLayout: "Angle list", cleanLayout: "Clean no-frame",
     linksKept: "links preserved",
   },
 } as const;
@@ -800,20 +781,23 @@ export default function Home() {
   const [appearanceIndex, setAppearanceIndex] = useState(0);
   const [introTreatment, setIntroTreatment] = useState<IntroTreatmentId>("none");
   const [entityHighlights, setEntityHighlights] = useState(false);
-  const [expertCards, setExpertCards] = useState(true);
-  const [angleGroups, setAngleGroups] = useState(true);
-  const [fullProfileCards, setFullProfileCards] = useState(true);
-  const [blackAngleTitles, setBlackAngleTitles] = useState(true);
   const [randomLabel, setRandomLabel] = useState("");
-  const [colorMenuOpen, setColorMenuOpen] = useState(false);
   const sourceInputRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
-  const colorMenuRef = useRef<HTMLDivElement>(null);
-  const savedSelectionRef = useRef<Range | null>(null);
   const previewScrollTopRef = useRef(0);
   const t = UI[lang];
   const { palette, emphasisVariant } = appearanceHistory[appearanceIndex];
   const effectiveStyle = style === "smart" ? detectStyle(source) : style;
+  const sourceExpertCount = source
+    .split(/\r?\n/)
+    .filter((line) => EXPERT_LINE_RE.test(line.trim()))
+    .length;
+  const compactExpertLayout = effectiveStyle === "list";
+  const plainTextLayout = effectiveStyle === "minimal" && sourceExpertCount === 0;
+  const expertCards = !plainTextLayout;
+  const angleGroups = !plainTextLayout;
+  const fullProfileCards = !compactExpertLayout && !plainTextLayout;
+  const blackAngleTitles = true;
   const formatOptions = useMemo(
     () => ({ introTreatment, entityHighlights, expertCards, angleGroups, fullProfileCards, blackAngleTitles, emphasisVariant }),
     [introTreatment, entityHighlights, expertCards, angleGroups, fullProfileCards, blackAngleTitles, emphasisVariant],
@@ -822,10 +806,8 @@ export default function Home() {
     () => formatText(source, style, palette, formatOptions, richLinks),
     [source, style, palette, formatOptions, richLinks],
   );
-  const styleIndex = STYLE_IDS.indexOf(effectiveStyle);
+  const selectedStyleIndex = STYLE_IDS.indexOf(style);
   const paletteIds = Object.keys(PALETTES) as PaletteId[];
-  const paletteIndex = paletteIds.indexOf(palette);
-  const emphasisVariantIndex = EMPHASIS_VARIANTS.indexOf(emphasisVariant);
 
   useEffect(() => {
     let restoreTimer: number | undefined;
@@ -850,17 +832,6 @@ export default function Home() {
   useEffect(() => {
     document.documentElement.lang = lang === "zh" ? "zh-CN" : lang;
   }, [lang]);
-
-  useEffect(() => {
-    if (!colorMenuOpen) return;
-    function closeColorMenu(event: MouseEvent) {
-      if (!colorMenuRef.current?.contains(event.target as Node)) {
-        setColorMenuOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", closeColorMenu);
-    return () => document.removeEventListener("mousedown", closeColorMenu);
-  }, [colorMenuOpen]);
 
   useLayoutEffect(() => {
     const preview = previewRef.current;
@@ -889,44 +860,6 @@ export default function Home() {
 
   function applyStylePreset(nextStyle: StyleId) {
     setStyle(nextStyle);
-    if (nextStyle === "smart") {
-      const detected = detectStyle(source);
-      if (detected === "list") {
-        setFullProfileCards(false);
-        setAngleGroups(true);
-        setExpertCards(true);
-      } else if (detected === "minimal") {
-        setFullProfileCards(false);
-        setAngleGroups(false);
-        setExpertCards(false);
-      } else {
-        setFullProfileCards(true);
-        setAngleGroups(true);
-        setExpertCards(true);
-      }
-      return;
-    }
-    if (nextStyle === "classic") {
-      setFullProfileCards(true);
-      setAngleGroups(true);
-      setExpertCards(true);
-      return;
-    }
-    if (nextStyle === "list") {
-      setFullProfileCards(false);
-      setAngleGroups(true);
-      setExpertCards(true);
-      return;
-    }
-    if (nextStyle === "qa") {
-      setFullProfileCards(true);
-      setAngleGroups(true);
-      setExpertCards(true);
-      return;
-    }
-    setFullProfileCards(false);
-    setAngleGroups(false);
-    setExpertCards(false);
   }
 
   function randomizeStyle() {
@@ -952,32 +885,6 @@ export default function Home() {
     setAppearanceIndex((current) => Math.min(appearanceHistory.length - 1, current + 1));
   }
 
-  function savePreviewSelection() {
-    const preview = previewRef.current;
-    const selection = window.getSelection();
-    if (!preview || !selection?.rangeCount) return;
-    const range = selection.getRangeAt(0);
-    if (preview.contains(range.commonAncestorContainer)) {
-      savedSelectionRef.current = range.cloneRange();
-    }
-  }
-
-  function restorePreviewSelection() {
-    const selection = window.getSelection();
-    const range = savedSelectionRef.current;
-    if (!selection || !range) return;
-    selection.removeAllRanges();
-    selection.addRange(range);
-  }
-
-  function apply(command: string, value?: string, closeMenu = false) {
-    restorePreviewSelection();
-    previewRef.current?.focus({ preventScroll: true });
-    document.execCommand(command, false, value);
-    savePreviewSelection();
-    if (closeMenu) setColorMenuOpen(false);
-  }
-
   function syncSourceFromEditor() {
     const editor = sourceInputRef.current;
     if (!editor) return;
@@ -1001,16 +908,6 @@ export default function Home() {
     document.execCommand("insertHTML", false, insertHtml);
     window.setTimeout(() => {
       syncSourceFromEditor();
-      const pastedText = sourceInputRef.current?.innerText.replaceAll("\u00a0", " ") ?? "";
-      const pastedExpertCount = pastedText
-        .split(/\r?\n/)
-        .filter((line) => EXPERT_LINE_RE.test(line.trim()))
-        .length;
-      if (pastedExpertCount === 1) {
-        setFullProfileCards(true);
-        setAngleGroups(true);
-        setExpertCards(true);
-      }
     }, 0);
   }
 
@@ -1018,26 +915,6 @@ export default function Home() {
     if (sourceInputRef.current) sourceInputRef.current.innerHTML = "";
     setSource("");
     setRichLinks([]);
-  }
-
-  function applyLayoutPreset(preset: "profile" | "list" | "clean") {
-    if (preset === "profile") {
-      setFullProfileCards(true);
-      setAngleGroups(true);
-      setExpertCards(true);
-      return;
-    }
-    if (preset === "list") {
-      setFullProfileCards(false);
-      setAngleGroups(true);
-      setExpertCards(true);
-      applyStylePreset("list");
-      return;
-    }
-    setFullProfileCards(false);
-    setAngleGroups(false);
-    setExpertCards(false);
-    applyStylePreset("minimal");
   }
 
   async function copyRichText() {
@@ -1130,24 +1007,30 @@ export default function Home() {
           <div className="panelHead">
             <div><span className="number">02</span><b>{t.result}</b></div>
             <div className="resultActions">
-              <span className="live"><i /> {t.current}：{t.styles[styleIndex]} · {t.palettes[paletteIndex]} · {t.emphasisStyles[emphasisVariantIndex]}</span>
+              <span className="live"><i /> {t.current}：{t.styles[selectedStyleIndex]}</span>
               <button className="topCopyButton" onClick={copyRichText}>
                 <span>{copied ? "✓" : "⧉"}</span>{copied ? t.copied : t.copy}
               </button>
             </div>
           </div>
           <div className="styleBar">
-            <div className="styleTabs" role="group" aria-label="排版模板">
-              {STYLE_IDS.map((item, index) => (
-                <button
-                  key={item}
-                  className={style === item ? "active" : ""}
-                  onClick={() => applyStylePreset(item)}
-                  title={t.notes[index]}
-                >
-                  {t.styles[index]}
-                </button>
-              ))}
+            <div className="modeControl">
+              <span className="optionLabel">{t.formatMode}</span>
+              <div className="styleTabs" role="group" aria-label={t.formatMode}>
+                {VISIBLE_STYLE_IDS.map((item) => {
+                  const index = STYLE_IDS.indexOf(item);
+                  return (
+                    <button
+                      key={item}
+                      className={style === item ? "active" : ""}
+                      onClick={() => applyStylePreset(item)}
+                      title={t.notes[index]}
+                    >
+                      {t.styles[index]}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             <div className="appearanceActions">
               <button
@@ -1172,12 +1055,6 @@ export default function Home() {
             </div>
           </div>
           <div className="optionBar" aria-label={t.options}>
-            <span className="optionLabel">{t.options}</span>
-            <div className="quickLayouts" aria-label={t.quickLayouts}>
-              <button className={fullProfileCards && angleGroups ? "active" : ""} onClick={() => applyLayoutPreset("profile")}>{t.profileLayout}</button>
-              <button className={!fullProfileCards && angleGroups ? "active" : ""} onClick={() => applyLayoutPreset("list")}>{t.listLayout}</button>
-              <button className={!fullProfileCards && !angleGroups ? "active" : ""} onClick={() => applyLayoutPreset("clean")}>{t.cleanLayout}</button>
-            </div>
             <div className="introTreatment" role="group" aria-label={t.introLabel}>
               <span>{t.introLabel}</span>
               {INTRO_TREATMENTS.map((item, index) => (
@@ -1191,96 +1068,10 @@ export default function Home() {
               ))}
             </div>
             <label><input type="checkbox" checked={entityHighlights} onChange={(event) => changeEntityHighlights(event.target.checked)} /><span>{t.entityHighlight}</span></label>
-            <label><input type="checkbox" checked={expertCards} onChange={(event) => setExpertCards(event.target.checked)} /><span>{t.expertCards}</span></label>
-            <label><input type="checkbox" checked={angleGroups} onChange={(event) => setAngleGroups(event.target.checked)} /><span>{t.angleGroups}</span></label>
-            <label><input type="checkbox" checked={fullProfileCards} onChange={(event) => setFullProfileCards(event.target.checked)} /><span>{t.fullProfileCards}</span></label>
-            <label><input type="checkbox" checked={blackAngleTitles} onChange={(event) => setBlackAngleTitles(event.target.checked)} /><span>{t.blackAngleTitles}</span></label>
-          </div>
-          <div className="toolbar" aria-label={t.toolbar}>
-            <button onMouseDown={(event) => { event.preventDefault(); savePreviewSelection(); }} onClick={() => apply("bold")} title={t.bold}><b>B</b></button>
-            <div className="colorMenuWrap" ref={colorMenuRef}>
-              <button
-                className={colorMenuOpen ? "active" : ""}
-                onMouseDown={(event) => {
-                  event.preventDefault();
-                  savePreviewSelection();
-                }}
-                onClick={() => setColorMenuOpen((current) => !current)}
-                title={t.colors}
-                aria-expanded={colorMenuOpen}
-              >
-                <span className="colorA" style={{ color: PALETTES[palette].key, borderColor: PALETTES[palette].key }}>A</span>
-                <span className="menuCaret">▾</span>
-              </button>
-              {colorMenuOpen && (
-                <div className="colorPopover" role="dialog" aria-label={t.colors}>
-                  <section>
-                    <div className="colorSectionHead">
-                      <b>{t.textColor}</b>
-                      <button onMouseDown={(event) => event.preventDefault()} onClick={() => apply("foreColor", "#171717", true)}>{t.defaultColor}</button>
-                    </div>
-                    <div className="colorGrid">
-                      {TEXT_COLORS.map((color) => (
-                        <button
-                          key={color}
-                          className="colorSwatch"
-                          style={{ background: color }}
-                          aria-label={`${t.textColor} ${color}`}
-                          onMouseDown={(event) => event.preventDefault()}
-                          onClick={() => apply("foreColor", color, true)}
-                        />
-                      ))}
-                      <label className="customColor" title={t.customColor}>
-                        <span>＋</span>
-                        <input
-                          type="color"
-                          aria-label={`${t.textColor} ${t.customColor}`}
-                          onMouseDown={() => savePreviewSelection()}
-                          onChange={(event) => apply("foreColor", event.target.value, true)}
-                        />
-                      </label>
-                    </div>
-                  </section>
-                  <section>
-                    <div className="colorSectionHead">
-                      <b>{t.backgroundColor}</b>
-                      <button onMouseDown={(event) => event.preventDefault()} onClick={() => apply("backColor", "transparent", true)}>{t.noHighlight}</button>
-                    </div>
-                    <div className="colorGrid">
-                      {BACKGROUND_COLORS.map((color) => (
-                        <button
-                          key={color}
-                          className="colorSwatch backgroundSwatch"
-                          style={{ background: color }}
-                          aria-label={`${t.backgroundColor} ${color}`}
-                          onMouseDown={(event) => event.preventDefault()}
-                          onClick={() => apply("backColor", color, true)}
-                        />
-                      ))}
-                      <label className="customColor" title={t.customColor}>
-                        <span>＋</span>
-                        <input
-                          type="color"
-                          aria-label={`${t.backgroundColor} ${t.customColor}`}
-                          onMouseDown={() => savePreviewSelection()}
-                          onChange={(event) => apply("backColor", event.target.value, true)}
-                        />
-                      </label>
-                    </div>
-                  </section>
-                </div>
-              )}
-            </div>
-            <span className="paletteDots" title={t.palettes[paletteIndex]}><i style={{background: PALETTES[palette].accent}} /><i style={{background: PALETTES[palette].key}} /><i style={{background: PALETTES[palette].soft}} /></span>
-            <button onMouseDown={(event) => { event.preventDefault(); savePreviewSelection(); }} onClick={() => apply("undo")} title={t.undoFormat} aria-label={t.undoFormat}>↶</button>
-            <button onMouseDown={(event) => { event.preventDefault(); savePreviewSelection(); }} onClick={() => apply("redo")} title={t.redoFormat} aria-label={t.redoFormat}>↷</button>
-            <button onMouseDown={(event) => { event.preventDefault(); savePreviewSelection(); }} onClick={() => apply("removeFormat")} title={t.remove}>{t.remove}</button>
           </div>
           <div
             ref={previewRef}
             className={`preview style-${effectiveStyle}`}
-            contentEditable
-            suppressContentEditableWarning
             onScroll={(event) => {
               previewScrollTopRef.current = event.currentTarget.scrollTop;
             }}
