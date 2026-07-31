@@ -49,16 +49,49 @@ main { min-height: 100vh; }
 .languageSwitch button.active { background: white; color: var(--blue-dark); font-weight: 750; box-shadow: 0 1px 4px rgba(27,48,62,.12); }
 
 .hero {
-  max-width: 1380px; margin: 0 auto; padding: 48px 4vw 34px;
-  display: flex; justify-content: space-between; align-items: end; gap: 32px;
+  max-width: 1380px; min-height: 188px; margin: 0 auto; padding: 30px 4vw 22px;
+  display: flex; justify-content: space-between; align-items: center; gap: 30px;
 }
+.heroCopy { position: relative; z-index: 2; min-width: 0; }
 .eyebrow { color: var(--blue); font-size: 11px; letter-spacing: .2em; font-weight: 800; margin: 0 0 12px; }
 h1 { margin: 0; font-size: clamp(32px, 3.2vw, 52px); letter-spacing: -.045em; line-height: 1.08; font-weight: 760; }
 .subtitle { margin: 16px 0 0; color: var(--muted); font-size: 16px; }
-.steps { flex: 0 0 auto; display: flex; align-items: center; gap: 12px; color: #66717b; font-size: 13px; padding-bottom: 7px; }
+.heroAside {
+  position: relative; flex: 0 0 410px; align-self: stretch;
+  display: flex; align-items: flex-end; justify-content: flex-end;
+}
+.teamCameo {
+  position: absolute; inset: -15px 0 25px auto; width: 405px;
+  pointer-events: none; user-select: none;
+}
+.teamCameo::before {
+  content: ""; position: absolute; right: 2px; bottom: -2px; width: 214px; height: 116px;
+  border-radius: 50%; background: radial-gradient(circle, rgba(217,228,235,.7), rgba(242,245,247,0) 70%);
+}
+.teamCameo img {
+  position: absolute; right: 0; bottom: -4px; width: 198px; height: auto;
+  display: block; opacity: .96; filter: drop-shadow(0 8px 12px rgba(29,47,60,.09));
+}
+.cameoBubble {
+  position: absolute; z-index: 2; max-width: 172px; padding: 7px 11px;
+  border: 1px solid #d8e2e8; border-radius: 14px; background: rgba(255,255,255,.95);
+  color: #41515c; font-size: 11px; font-weight: 720; line-height: 1.35;
+  box-shadow: 0 5px 14px rgba(34,56,70,.07); white-space: nowrap;
+}
+.cameoBubble::after {
+  content: ""; position: absolute; right: -5px; bottom: 9px; width: 9px; height: 9px;
+  border-top: 1px solid #d8e2e8; border-right: 1px solid #d8e2e8;
+  background: rgba(255,255,255,.95); transform: rotate(45deg);
+}
+.cameoBubbleOne { top: 10px; left: 7px; color: var(--blue-dark); }
+.cameoBubbleTwo { top: 53px; left: 25px; }
+.steps {
+  position: relative; z-index: 3; flex: 0 0 auto; display: flex; align-items: center; gap: 10px;
+  color: #66717b; font-size: 11px; padding-bottom: 1px;
+}
 .steps span { display: flex; align-items: center; gap: 7px; white-space: nowrap; }
-.steps b { width: 23px; height: 23px; border: 1px solid #c8d2d9; border-radius: 50%; display: grid; place-items: center; color: var(--blue-dark); background: white; }
-.steps i { width: 27px; height: 1px; background: #cbd4da; }
+.steps b { width: 21px; height: 21px; border: 1px solid #c8d2d9; border-radius: 50%; display: grid; place-items: center; color: var(--blue-dark); background: white; }
+.steps i { width: 18px; height: 1px; background: #cbd4da; }
 
 .workspace {
   max-width: 1380px; margin: 0 auto; padding: 0 4vw 34px;
@@ -182,9 +215,16 @@ footer {
   font-size: 11px; display: flex; justify-content: space-between; gap: 18px;
 }
 
+@media (max-width: 1160px) {
+  .hero { min-height: 0; padding-top: 38px; padding-bottom: 28px; align-items: end; }
+  .heroAside { flex-basis: auto; align-self: auto; }
+  .teamCameo { display: none; }
+}
+
 @media (max-width: 920px) {
   .headerHint, .steps { display: none; }
   .hero { padding-top: 34px; }
+  .heroAside { display: none; }
   .workspace { grid-template-columns: 1fr; gap: 18px; }
   .arrow { display: none; }
   .panel { height: min(74vh, 720px); min-height: 500px; }
