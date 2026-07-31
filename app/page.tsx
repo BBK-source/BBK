@@ -78,6 +78,8 @@ const UI = {
     options: "简易设置", introLabel: "介绍文", introTreatments: ["无", "标色", "加粗", "荧光"], entityHighlight: "自动标记公司／职位",
     previous: "上一个", next: "下一个",
     linksKept: "已保留链接",
+    cameoOne: "这个真好用啊！",
+    cameoTwo: "终于不用手动改格式了",
   },
   ja: {
     headerHint: "文章を貼り付けて、自動整形し、Gmailへコピー",
@@ -97,6 +99,8 @@ const UI = {
     options: "簡単設定", introLabel: "紹介文", introTreatments: ["なし", "カラー", "太字", "マーカー"], entityHighlight: "会社・役職を自動強調",
     previous: "前へ", next: "次へ",
     linksKept: "リンクを保持",
+    cameoOne: "これ、本当に便利！",
+    cameoTwo: "もう手作業で整えなくていいね",
   },
   en: {
     headerHint: "Paste, format automatically, and copy to Gmail",
@@ -116,6 +120,8 @@ const UI = {
     options: "Simple settings", introLabel: "Introduction", introTreatments: ["None", "Color", "Bold", "Highlight"], entityHighlight: "Auto-highlight companies & roles",
     previous: "Previous", next: "Next",
     linksKept: "links preserved",
+    cameoOne: "This is actually so useful!",
+    cameoTwo: "No more manual formatting.",
   },
 } as const;
 
@@ -970,15 +976,22 @@ export default function Home() {
       </header>
 
       <section className="hero">
-        <div>
+        <div className="heroCopy">
           <p className="eyebrow">EMAIL FORMAT ASSISTANT</p>
           <h1>{t.title}</h1>
           <p className="subtitle">{t.subtitle}</p>
         </div>
-        <div className="steps">
-          <span><b>1</b> {t.paste}</span><i />
-          <span><b>2</b> {t.format}</span><i />
-          <span><b>3</b> {t.copyStep}</span>
+        <div className="heroAside">
+          <div className="teamCameo" aria-hidden="true">
+            <span className="cameoBubble cameoBubbleOne">{t.cameoOne}</span>
+            <span className="cameoBubble cameoBubbleTwo">{t.cameoTwo}</span>
+            <img src="/BBK/bbk-team-cameo.png" alt="" />
+          </div>
+          <div className="steps">
+            <span><b>1</b> {t.paste}</span><i />
+            <span><b>2</b> {t.format}</span><i />
+            <span><b>3</b> {t.copyStep}</span>
+          </div>
         </div>
       </section>
 
