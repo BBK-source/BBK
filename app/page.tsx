@@ -340,7 +340,7 @@ function formatLine(
   const colors = PALETTES[palette];
   const accent = style === "minimal" ? "#596773" : colors.accent;
   const keyColor = style === "minimal" ? "#26343d" : colors.key;
-  if (!safe.trim()) return `<div style="height:7px;line-height:7px"><br></div>`;
+  if (!safe.trim()) return `<div style="height:4px;line-height:4px"><br></div>`;
   if (EXPERT_LINE_RE.test(safe)) {
     const idMatch = safe.match(EXPERT_ID_RE);
     const id = idMatch?.[0] ?? "";
@@ -348,23 +348,23 @@ function formatLine(
     const useCard = options.expertCards && expertCount > 1 && !compactExpert;
     const listCss = compactExpert
       ? style === "classic"
-        ? `line-height:1.5;font-weight:700;padding:8px 9px 8px 24px;position:relative;background:${colors.soft};border-left:4px solid ${colors.accent}`
+        ? `line-height:1.4;font-weight:700;padding:5px 7px 5px 21px;position:relative;background:${colors.soft};border-left:3px solid ${colors.accent}`
         : style === "qa"
-          ? `line-height:1.5;font-weight:700;padding:7px 9px 7px 24px;position:relative;border:1px solid ${colors.border};background:#fff`
+          ? `line-height:1.4;font-weight:700;padding:5px 7px 5px 21px;position:relative;border:1px solid ${colors.border};background:#fff`
           : style === "minimal"
-            ? `line-height:1.5;font-weight:700;padding:6px 4px 7px 20px;position:relative;border-bottom:1px solid ${colors.border}`
-            : "line-height:1.42;font-weight:700;padding:5px 7px 5px 22px;position:relative"
+            ? `line-height:1.4;font-weight:700;padding:4px 3px 5px 18px;position:relative;border-bottom:1px solid ${colors.border}`
+            : "line-height:1.38;font-weight:700;padding:4px 6px 4px 20px;position:relative"
       : style === "classic"
-        ? `line-height:1.55;font-weight:700;margin:5px 0 10px;padding:9px 11px 9px 26px;background:${colors.soft};border-left:4px solid ${colors.accent};position:relative`
+        ? `line-height:1.42;font-weight:700;margin:3px 0 6px;padding:6px 8px 6px 22px;background:${colors.soft};border-left:3px solid ${colors.accent};position:relative`
         : style === "qa"
-          ? `line-height:1.55;font-weight:700;margin:5px 0 10px;padding:8px 10px 8px 26px;border:1px solid ${colors.border};background:#fff;position:relative`
+          ? `line-height:1.42;font-weight:700;margin:3px 0 6px;padding:6px 8px 6px 22px;border:1px solid ${colors.border};background:#fff;position:relative`
           : style === "minimal"
-            ? `line-height:1.55;font-weight:700;margin:3px 0 9px;padding:6px 4px 7px 21px;border-bottom:1px solid ${colors.border};position:relative`
+            ? `line-height:1.42;font-weight:700;margin:2px 0 5px;padding:4px 3px 5px 19px;border-bottom:1px solid ${colors.border};position:relative`
             : style === "list" || useCard
-              ? `line-height:1.45;font-weight:700;margin:3px 0;padding:5px 8px 5px 24px;border:1px dotted ${colors.border};position:relative`
-              : "line-height:1.55;font-weight:700;margin:3px 0 8px";
+              ? `line-height:1.38;font-weight:700;margin:2px 0;padding:4px 6px 4px 20px;border:1px dotted ${colors.border};position:relative`
+              : "line-height:1.42;font-weight:700;margin:2px 0 5px";
     const bullet = style === "list" || style === "classic" || style === "qa" || style === "minimal" || useCard || compactExpert
-      ? `<span style="position:absolute;left:${compactExpert ? "7px" : "9px"};color:#151515">•</span>`
+      ? `<span style="position:absolute;left:${compactExpert ? "6px" : "7px"};color:#151515">•</span>`
       : "";
     const expertRest = style === "minimal"
       ? rest
@@ -373,25 +373,25 @@ function formatLine(
   }
   if (/^(Customers?|CUSTOMERS?)[-:| ｜]/i.test(safe)) {
     const css = style === "list"
-      ? `font-weight:800;margin:12px 0 0;padding:6px 8px;background:${colors.soft};border-left:4px solid ${colors.accent}`
+      ? `font-weight:800;margin:8px 0 0;padding:4px 6px;background:${colors.soft};border-left:3px solid ${colors.accent}`
       : style === "classic"
-        ? `font-weight:800;margin:11px 0 7px;padding:4px 0 6px;border-bottom:2px solid ${colors.accent}`
+        ? `font-weight:800;margin:8px 0 4px;padding:3px 0 4px;border-bottom:2px solid ${colors.accent}`
         : style === "qa"
-          ? `font-weight:800;margin:11px 0 7px;padding:6px 8px;border:1px solid ${colors.border};background:${colors.soft}`
+          ? `font-weight:800;margin:8px 0 4px;padding:4px 6px;border:1px solid ${colors.border};background:${colors.soft}`
           : style === "minimal"
-            ? `font-weight:800;margin:12px 0 6px;padding:3px 0 6px;border-bottom:1px solid #9aa5ad`
-            : "font-weight:800;text-decoration:underline;margin:12px 0 6px";
+            ? `font-weight:800;margin:8px 0 4px;padding:2px 0 4px;border-bottom:1px solid #9aa5ad`
+            : "font-weight:800;text-decoration:underline;margin:8px 0 4px";
     return `<div style="${css}">${safe}</div>`;
   }
   if (isScreenedHeading(raw)) {
     const bg = style === "qa" || style === "classic" ? colors.soft : "transparent";
     const screenedCss = style === "qa"
-      ? `font-weight:800;margin-top:15px;padding:8px 10px;background:${bg};border:1px solid ${colors.border}`
+      ? `font-weight:800;margin-top:9px;padding:5px 7px;background:${bg};border:1px solid ${colors.border}`
       : style === "classic"
-        ? `font-weight:800;margin-top:16px;padding:8px 9px;background:${bg};border-top:2px solid ${colors.accent}`
+        ? `font-weight:800;margin-top:10px;padding:5px 7px;background:${bg};border-top:2px solid ${colors.accent}`
         : style === "list"
-          ? `font-weight:800;margin-top:12px;padding:6px 3px;border-top:1px dashed ${colors.border}`
-          : `font-weight:800;margin-top:15px;padding:8px 0 4px;border-top:1px solid #9aa5ad`;
+          ? `font-weight:800;margin-top:8px;padding:4px 2px;border-top:1px dashed ${colors.border}`
+          : `font-weight:800;margin-top:9px;padding:5px 0 3px;border-top:1px solid #9aa5ad`;
     return `<div style="${screenedCss}">${safe}</div>`;
   }
   if (qaRole === "question") {
@@ -404,13 +404,13 @@ function formatLine(
     );
     const body = emphasizeCompanies(rawBody, style, palette, options.entityHighlights, options.emphasisVariant);
     const bg = style === "qa" ? colors.soft : style === "list" ? "#f6f8f9" : "transparent";
-    const margin = qaStart ? (style === "qa" ? "margin-top:11px;" : "margin-top:7px;") : "";
-    const padding = style === "qa" ? (qaStart ? "7px 8px" : "2px 8px 6px") : style === "list" ? "4px 6px" : "3px 6px";
+    const margin = qaStart ? (style === "qa" ? "margin-top:7px;" : "margin-top:4px;") : "";
+    const padding = style === "qa" ? (qaStart ? "5px 6px" : "1px 6px 4px") : style === "list" ? "3px 5px" : "2px 5px";
     const border = style === "minimal" ? "#9aa5ad" : colors.accent;
     const extra = style === "qa"
       ? `${qaStart ? `border-top:1px solid ${colors.border};` : ""}border-right:1px solid ${colors.border}`
       : "";
-    return `<div style="line-height:1.55;background:${bg};${margin}padding:${padding};border-left:${style === "minimal" ? "2px" : "3px"} solid ${border};${extra}">${label ? `<b>${label}</b> ` : ""}${body}</div>`;
+    return `<div style="line-height:1.42;background:${bg};${margin}padding:${padding};border-left:${style === "minimal" ? "2px" : "3px"} solid ${border};${extra}">${label ? `<b>${label}</b> ` : ""}${body}</div>`;
   }
   if (qaRole === "answer") {
     const prefixMatch = raw.match(ANSWER_PREFIX_RE) ?? raw.match(ARROW_ANSWER_RE);
@@ -424,48 +424,48 @@ function formatLine(
     const bg = style === "qa" ? colors.soft : "transparent";
     const onlyLabel = Boolean(prefixMatch && !body);
     const padding = style === "qa"
-      ? onlyLabel ? "8px 8px 0" : qaStart ? "7px 8px" : "2px 8px 7px"
-      : onlyLabel ? "7px 5px 0" : qaStart ? "4px 6px" : "1px 6px 5px";
+      ? onlyLabel ? "5px 6px 0" : qaStart ? "5px 6px" : "1px 6px 4px"
+      : onlyLabel ? "4px 5px 0" : qaStart ? "3px 5px" : "1px 5px 3px";
     const extra = style === "qa"
       ? `border-left:3px solid ${colors.accent};border-right:1px solid ${colors.border};${qaEnd ? `border-bottom:1px solid ${colors.border};` : ""}`
       : "";
     const answerBody = emphasizeQa(body, style, palette, options.entityHighlights, options.emphasisVariant);
-    return `<div style="color:${keyColor};font-weight:${onlyLabel ? "700" : weight};line-height:1.6;background:${bg};padding:${padding};${extra}">${prefix ? `<b>${prefix}</b>${body ? " " : ""}` : ""}${answerBody}</div>`;
+    return `<div style="color:${keyColor};font-weight:${onlyLabel ? "700" : weight};line-height:1.45;background:${bg};padding:${padding};${extra}">${prefix ? `<b>${prefix}</b>${body ? " " : ""}` : ""}${answerBody}</div>`;
   }
   if (isEmploymentHeading(raw) || isAvailabilityHeading(raw)) {
     const bg = style === "qa" ? colors.soft : "transparent";
-    return `<div style="font-weight:800;margin-top:18px;padding:${style === "qa" ? "7px 8px" : "7px 0 5px"};border-bottom:1px solid ${colors.border};color:${accent};background:${bg}">${safe}</div>`;
+    return `<div style="font-weight:800;margin-top:11px;padding:${style === "qa" ? "5px 6px" : "5px 0 3px"};border-bottom:1px solid ${colors.border};color:${accent};background:${bg}">${safe}</div>`;
   }
   if (section === "employment" && /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{4}\b/i.test(safe)) {
-    return `<div style="font-weight:700;line-height:1.55;margin-top:5px">${safe}</div>`;
+    return `<div style="font-weight:700;line-height:1.42;margin-top:3px">${safe}</div>`;
   }
   if (section === "employment" && /\s+-\s+/.test(safe)) {
-    return `<div style="line-height:1.55;padding:2px 0 5px;border-bottom:1px dotted ${colors.border}">${emphasizeCompanies(safe, style, palette, options.entityHighlights, options.emphasisVariant)}</div>`;
+    return `<div style="line-height:1.42;padding:1px 0 3px;border-bottom:1px dotted ${colors.border}">${emphasizeCompanies(safe, style, palette, options.entityHighlights, options.emphasisVariant)}</div>`;
   }
   if (section === "availability" && /^Time Zone\s*:/i.test(safe)) {
-    return `<div style="font-weight:700;line-height:1.55;padding:6px 0;color:${accent}">${safe}</div>`;
+    return `<div style="font-weight:700;line-height:1.42;padding:4px 0;color:${accent}">${safe}</div>`;
   }
   if (isAvailabilityLine(raw)) {
-    return `<div style="line-height:1.55;padding:3px 6px;border-left:3px solid ${colors.border}">${emphasizeAvailabilityTimes(safe)}</div>`;
+    return `<div style="line-height:1.42;padding:2px 5px;border-left:3px solid ${colors.border}">${emphasizeAvailabilityTimes(safe)}</div>`;
   }
   if (isUnavailableAvailabilityLine(raw)) {
-    return `<div style="line-height:1.55;padding:3px 6px;color:#68727a">${safe}</div>`;
+    return `<div style="line-height:1.42;padding:2px 5px;color:#68727a">${safe}</div>`;
   }
   if (/^Book Now$/i.test(safe)) {
     return `<div style="margin:4px 0">${renderBookNow(bookNowUrl, palette)}</div>`;
   }
   if (/^This specialist is based in\b/i.test(safe)) {
-    return `<div style="line-height:1.55;color:#68727a">${safe}</div>`;
+    return `<div style="line-height:1.42;color:#68727a">${safe}</div>`;
   }
   if (/^Hourly Fee\s*:/i.test(safe)) {
-    return `<div style="line-height:1.55;font-weight:700;color:${keyColor}">${safe}</div>`;
+    return `<div style="line-height:1.42;font-weight:700;color:${keyColor}">${safe}</div>`;
   }
   if (/^[-•]\s*Current/i.test(safe)) {
     const bg = style === "minimal" ? "transparent" : colors.soft;
-    return `<div style="background:${bg};padding:2px 4px;line-height:1.5">${emphasizeCompanies(safe, style, palette, options.entityHighlights, options.emphasisVariant)}</div>`;
+    return `<div style="background:${bg};padding:1px 3px;line-height:1.4">${emphasizeCompanies(safe, style, palette, options.entityHighlights, options.emphasisVariant)}</div>`;
   }
   if (/^\d{1,2}月\d{1,2}日|^\d{1,2}\/\d{1,2}|^\d{4}[/-]\d{1,2}[/-]\d{1,2}/.test(safe)) {
-    return `<div style="font-weight:600;line-height:1.55">${safe}</div>`;
+    return `<div style="font-weight:600;line-height:1.42">${safe}</div>`;
   }
   const body = section === "body"
     ? formatIntroduction(safe, palette, options.introTreatment, options.entityHighlights, style, options.emphasisVariant)
@@ -473,12 +473,12 @@ function formatLine(
       ? safe
       : emphasizeCompanies(safe, style, palette, options.entityHighlights, options.emphasisVariant);
   const bodyCss = style === "classic"
-    ? "line-height:1.72"
+    ? "line-height:1.5"
     : style === "list"
-      ? "line-height:1.48;color:#3b4650"
+      ? "line-height:1.38;color:#3b4650"
       : style === "minimal"
-        ? "line-height:1.58;color:#33404a"
-        : "line-height:1.65";
+        ? "line-height:1.45;color:#33404a"
+        : "line-height:1.48";
   return `<div style="${bodyCss}">${body}</div>`;
 }
 
@@ -497,6 +497,7 @@ function formatText(
   let groupOpen = false;
   let groupMode: "list" | "profile" | null = null;
   let groupHasExpert = false;
+  let previousLineWasBlank = false;
   const skippedLines = new Set<number>();
   const usedLinks = new Set<number>();
   const parts: string[] = [];
@@ -533,12 +534,12 @@ function formatText(
         : PALETTES[palette].border;
     const groupBackground = style === "list" ? "#fbfcfd" : "#ffffff";
     parts.push(
-      `<div style="box-sizing:border-box;border:${borderWidth} solid ${groupBorder};border-radius:${style === "minimal" ? "0" : "5px"};margin:${mode === "profile" ? "9px 0" : "6px 0"};padding:${mode === "profile" ? "10px 12px" : "5px 7px"};background:${groupBackground}">`,
+      `<div style="box-sizing:border-box;border:${borderWidth} solid ${groupBorder};border-radius:${style === "minimal" ? "0" : "5px"};margin:${mode === "profile" ? "6px 0" : "4px 0"};padding:${mode === "profile" ? "7px 9px" : "4px 6px"};background:${groupBackground}">`,
     );
     if (title) {
       const titleColor = options.blackAngleTitles ? "#171717" : PALETTES[palette].accent;
       parts.push(
-        `<div style="font-weight:800;color:${titleColor};padding:2px 2px 5px;border-bottom:1px solid ${PALETTES[palette].border}">${escapeHtml(title)}</div>`,
+        `<div style="font-weight:800;color:${titleColor};padding:1px 1px 3px;border-bottom:1px solid ${PALETTES[palette].border}">${escapeHtml(title)}</div>`,
       );
     }
     groupOpen = true;
@@ -579,6 +580,13 @@ function formatText(
     const nextNonBlank = nextNonBlankIndex >= 0 ? lines[nextNonBlankIndex].trim() : "";
     const isAngleTitle = isAngleTitleAt(index);
     const isExpertLine = EXPERT_LINE_RE.test(trimmed);
+
+    if (!trimmed) {
+      if (previousLineWasBlank) continue;
+      previousLineWasBlank = true;
+    } else {
+      previousLineWasBlank = false;
+    }
 
     if (isExpertLine) {
       section = "body";
@@ -766,7 +774,10 @@ function formatText(
     parts.push(rendered);
   }
   closeGroup();
-  return parts.join("");
+  const content = parts.join("");
+  return content
+    ? `<div style="font-family:Arial,'Noto Sans JP',sans-serif;font-size:12px;line-height:1.45;color:#171717">${content}</div>`
+    : "";
 }
 
 export default function Home() {
