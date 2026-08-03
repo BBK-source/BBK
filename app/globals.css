@@ -50,7 +50,36 @@ main { min-height: 100vh; }
 
 .hero {
   max-width: 1380px; min-height: 188px; margin: 0 auto; padding: 30px 4vw 22px;
+  position: relative; overflow: hidden;
   display: flex; justify-content: space-between; align-items: center; gap: 30px;
+}
+.sponsorWall {
+  position: absolute; z-index: 0; inset: 7px 2.2vw 5px;
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  overflow: hidden; border-radius: 20px;
+  border: 1px solid rgba(95,137,165,.08);
+  background: rgba(255,255,255,.34);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 18%, #000 76%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 18%, #000 76%, transparent 100%);
+  pointer-events: none; user-select: none;
+}
+.sponsorWall::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(90deg, rgba(242,245,247,.78), rgba(255,255,255,.55) 36%, rgba(242,245,247,.48) 68%, rgba(242,245,247,.68));
+}
+.sponsorPoster { min-width: 0; overflow: hidden; opacity: .23; border-right: 1px solid rgba(255,255,255,.42); }
+.sponsorPoster:last-of-type { border-right: 0; }
+.sponsorPoster img {
+  width: 100%; height: 100%; display: block; object-fit: cover;
+  filter: saturate(.9) contrast(.92);
+  transform: scale(1.03);
+}
+.sponsorPosterKirin img { object-position: center 58%; }
+.sponsorWallLabel {
+  position: absolute; z-index: 2; left: 50%; bottom: 10px; transform: translateX(-50%);
+  padding: 4px 9px; border: 1px solid rgba(54,95,120,.22); border-radius: 999px;
+  background: rgba(255,255,255,.82); color: #365f78;
+  font-size: 8px; font-weight: 800; letter-spacing: .17em; white-space: nowrap;
 }
 .heroCopy { position: relative; z-index: 2; min-width: 0; }
 .eyebrow { color: var(--blue); font-size: 11px; letter-spacing: .2em; font-weight: 800; margin: 0 0 12px; }
@@ -219,6 +248,7 @@ footer {
   .hero { min-height: 0; padding-top: 38px; padding-bottom: 28px; align-items: end; }
   .heroAside { flex-basis: auto; align-self: auto; }
   .teamCameo { display: none; }
+  .sponsorPoster { opacity: .16; }
 }
 
 @media (max-width: 920px) {
@@ -233,4 +263,8 @@ footer {
   .styleBar { align-items: flex-start; }
   .randomButton { min-width: 98px; }
   footer { flex-direction: column; }
+}
+
+@media (max-width: 680px) {
+  .sponsorWall { display: none; }
 }
