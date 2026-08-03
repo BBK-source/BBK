@@ -78,8 +78,8 @@ const UI = {
     options: "简易设置", introLabel: "介绍文", introTreatments: ["无", "标色", "加粗", "荧光"], entityHighlight: "自动标记公司／职位",
     previous: "上一个", next: "下一个",
     linksKept: "已保留链接",
-    cameoOne: "这个真好用啊！",
-    cameoTwo: "终于不用手动改格式了",
+    cameoOne: "哎呀妈呀，这玩意儿老好使了！",
+    cameoTwo: "以后可不用手动折腾了！",
   },
   ja: {
     headerHint: "文章を貼り付けて、自動整形し、Gmailへコピー",
@@ -99,8 +99,8 @@ const UI = {
     options: "簡単設定", introLabel: "紹介文", introTreatments: ["なし", "カラー", "太字", "マーカー"], entityHighlight: "会社・役職を自動強調",
     previous: "前へ", next: "次へ",
     linksKept: "リンクを保持",
-    cameoOne: "これ、本当に便利！",
-    cameoTwo: "もう手作業で整えなくていいね",
+    cameoOne: "これ、めっちゃ便利やん！",
+    cameoTwo: "もう手作業で整えんでええな",
   },
   en: {
     headerHint: "Paste, format automatically, and copy to Gmail",
@@ -120,8 +120,8 @@ const UI = {
     options: "Simple settings", introLabel: "Introduction", introTreatments: ["None", "Color", "Bold", "Highlight"], entityHighlight: "Auto-highlight companies & roles",
     previous: "Previous", next: "Next",
     linksKept: "links preserved",
-    cameoOne: "This is actually so useful!",
-    cameoTwo: "No more manual formatting.",
+    cameoOne: "Yo, this thing’s fire!",
+    cameoTwo: "No more hand-formatting, fam.",
   },
 } as const;
 
