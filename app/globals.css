@@ -65,13 +65,13 @@ main { min-height: 100vh; }
 }
 .sponsorWall::after {
   content: ""; position: absolute; inset: 0;
-  background: linear-gradient(90deg, rgba(242,245,247,.78), rgba(255,255,255,.55) 36%, rgba(242,245,247,.48) 68%, rgba(242,245,247,.68));
+  background: linear-gradient(90deg, rgba(242,245,247,.54), rgba(255,255,255,.32) 36%, rgba(242,245,247,.27) 68%, rgba(242,245,247,.44));
 }
-.sponsorPoster { min-width: 0; overflow: hidden; opacity: .23; border-right: 1px solid rgba(255,255,255,.42); }
+.sponsorPoster { min-width: 0; overflow: hidden; opacity: .5; border-right: 1px solid rgba(255,255,255,.42); }
 .sponsorPoster:last-of-type { border-right: 0; }
 .sponsorPoster img {
   width: 100%; height: 100%; display: block; object-fit: cover;
-  filter: saturate(.9) contrast(.92);
+  filter: saturate(.95) contrast(.96);
   transform: scale(1.03);
 }
 .sponsorPosterKirin img { object-position: center 58%; }
@@ -90,15 +90,15 @@ h1 { margin: 0; font-size: clamp(32px, 3.2vw, 52px); letter-spacing: -.045em; li
   display: flex; align-items: flex-end; justify-content: flex-end;
 }
 .teamCameo {
-  position: absolute; inset: -15px 0 25px auto; width: 405px;
+  position: absolute; inset: -8px 0 25px auto; width: 405px;
   pointer-events: none; user-select: none;
 }
 .teamCameo::before {
-  content: ""; position: absolute; right: 2px; bottom: -2px; width: 214px; height: 116px;
+  content: ""; position: absolute; left: 38px; bottom: -2px; width: 214px; height: 116px;
   border-radius: 50%; background: radial-gradient(circle, rgba(217,228,235,.7), rgba(242,245,247,0) 70%);
 }
 .teamCameo img {
-  position: absolute; right: 0; bottom: -4px; width: 198px; height: auto;
+  position: absolute; left: 52px; bottom: -4px; width: 198px; height: auto;
   display: block; opacity: .96; filter: drop-shadow(0 8px 12px rgba(29,47,60,.09));
 }
 .cameoBubble {
@@ -112,8 +112,12 @@ h1 { margin: 0; font-size: clamp(32px, 3.2vw, 52px); letter-spacing: -.045em; li
   border-top: 1px solid #d8e2e8; border-right: 1px solid #d8e2e8;
   background: rgba(255,255,255,.95); transform: rotate(45deg);
 }
-.cameoBubbleOne { top: 10px; left: 7px; color: var(--blue-dark); }
-.cameoBubbleTwo { top: 53px; left: 25px; }
+.cameoBubbleOne { top: 6px; left: -24px; color: var(--blue-dark); }
+.cameoBubbleTwo { top: 47px; right: -4px; }
+.cameoBubbleTwo::after {
+  left: -5px; right: auto; border-top: 0; border-right: 0;
+  border-left: 1px solid #d8e2e8; border-bottom: 1px solid #d8e2e8;
+}
 .steps {
   position: relative; z-index: 3; flex: 0 0 auto; display: flex; align-items: center; gap: 10px;
   color: #66717b; font-size: 11px; padding-bottom: 1px;
@@ -249,7 +253,7 @@ footer {
   .hero { min-height: 0; padding-top: 38px; padding-bottom: 28px; align-items: end; }
   .heroAside { flex-basis: auto; align-self: auto; }
   .teamCameo { display: none; }
-  .sponsorPoster { opacity: .16; }
+  .sponsorPoster { opacity: .34; }
 }
 
 @media (max-width: 920px) {
