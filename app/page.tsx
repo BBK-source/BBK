@@ -44,6 +44,7 @@ const STYLE_IDS: StyleId[] = ["smart", "classic", "list", "qa", "minimal"];
 const VISIBLE_STYLE_IDS: StyleId[] = ["smart", "list", "qa"];
 const LANGUAGE_STORAGE_KEY = "bbk-bunken-language";
 const ENTITY_HIGHLIGHT_STORAGE_KEY = "bbk-bunken-entity-highlights";
+const PROFILE_FRAMES_STORAGE_KEY = "bbk-bunken-profile-frames";
 const EXPERT_LINE_RE = /^(?:[-•]\s*)?(?:#(?:[A-Z][A-Z0-9]*|\d+)(?:[.-]\d+)*|[A-Z][A-Z0-9]*(?:[.-]\d+)+)\s*[-–]/i;
 const EXPERT_ID_RE = /^(?:[-•]\s*)?((?:#(?:[A-Z][A-Z0-9]*|\d+)(?:[.-]\d+)*|[A-Z][A-Z0-9]*(?:[.-]\d+)+))/i;
 const QUESTION_END_RE = /[?？]\s*$/;
@@ -72,10 +73,10 @@ const UI = {
     foot1: "版式与结构保持不变；随机按钮只改变重点颜色、荧光笔和粗体效果。",
     foot2: "所有内容只在当前浏览器中处理，不会上传。",
     styles: ["自动排版", "重点卡片", "专家名单", "Q&A", "极简"],
-    notes: ["按内容自动选择完整结构", "整份专家资料以重点卡片呈现", "同一 Angle 下压缩成名单", "问题与回答使用分层色块", "去掉彩色强调与外框"],
+    notes: ["按内容自动选择结构，默认每位专家完整分框", "整份专家资料以重点卡片呈现", "同一 Angle 下压缩成名单", "问题与回答使用分层色块", "去掉彩色强调与外框"],
     palettes: ["TB 经典", "海洋蓝", "森林绿", "梅紫", "暖琥珀", "商务灰"],
     emphasisStyles: ["彩色粗体", "荧光笔", "彩色荧光", "黑色重粗", "彩色下划线"],
-    options: "简易设置", introLabel: "介绍文", introTreatments: ["无", "标色", "加粗", "荧光"], entityHighlight: "自动标记公司／职位",
+    options: "简易设置", introLabel: "介绍文", introTreatments: ["无", "标色", "加粗", "荧光"], profileFrames: "专家资料加框", entityHighlight: "自动标记公司／职位",
     previous: "上一个", next: "下一个",
     linksKept: "已保留链接",
     cameoOne: "哎呀妈呀，这玩意儿老好使了！",
@@ -93,10 +94,10 @@ const UI = {
     foot1: "レイアウトと構成はそのまま、ランダムボタンでは強調色・マーカー・太字だけが変わります。",
     foot2: "内容はブラウザ内のみで処理され、アップロードされません。",
     styles: ["自動", "重点カード", "専門家リスト", "Q&A", "シンプル"],
-    notes: ["内容に合わせて構成も自動選択", "一名ずつ全体を重点カードで表示", "同じAngle内をコンパクトな一覧に整理", "質問と回答を色付きカードで分ける", "色の強調と外枠を省いた簡潔表示"],
+    notes: ["内容に合わせて構成を選び、専門家ごとに全体を枠で表示", "一名ずつ全体を重点カードで表示", "同じAngle内をコンパクトな一覧に整理", "質問と回答を色付きカードで分ける", "色の強調と外枠を省いた簡潔表示"],
     palettes: ["TBクラシック", "オーシャン", "フォレスト", "プラム", "アンバー", "ビジネスグレー"],
     emphasisStyles: ["カラー太字", "マーカー", "カラー＋マーカー", "黒の太字", "カラー下線"],
-    options: "簡単設定", introLabel: "紹介文", introTreatments: ["なし", "カラー", "太字", "マーカー"], entityHighlight: "会社・役職を自動強調",
+    options: "簡単設定", introLabel: "紹介文", introTreatments: ["なし", "カラー", "太字", "マーカー"], profileFrames: "専門家ごとに枠を付ける", entityHighlight: "会社・役職を自動強調",
     previous: "前へ", next: "次へ",
     linksKept: "リンクを保持",
     cameoOne: "これ、めっちゃ便利やん！",
@@ -114,10 +115,10 @@ const UI = {
     foot1: "Layout and structure stay fixed; randomization changes only emphasis color, marker and bold treatment.",
     foot2: "Everything is processed locally in this browser and is not uploaded.",
     styles: ["Auto", "Feature card", "Expert list", "Q&A", "Simple"],
-    notes: ["Automatically selects both structure and styling", "Frames each full expert profile as a feature card", "Compresses experts under each angle into a list", "Separates questions and answers into colored cards", "Removes colored emphasis and outer frames"],
+    notes: ["Automatically selects the structure and frames each full expert profile", "Frames each full expert profile as a feature card", "Compresses experts under each angle into a list", "Separates questions and answers into colored cards", "Removes colored emphasis and outer frames"],
     palettes: ["TB classic", "Ocean", "Forest", "Plum", "Amber", "Business gray"],
     emphasisStyles: ["Color bold", "Highlighter", "Color + highlight", "Strong black", "Color underline"],
-    options: "Simple settings", introLabel: "Introduction", introTreatments: ["None", "Color", "Bold", "Highlight"], entityHighlight: "Auto-highlight companies & roles",
+    options: "Simple settings", introLabel: "Introduction", introTreatments: ["None", "Color", "Bold", "Highlight"], profileFrames: "Frame each expert", entityHighlight: "Auto-highlight companies & roles",
     previous: "Previous", next: "Next",
     linksKept: "links preserved",
     cameoOne: "Yo, this thing’s fire!",
@@ -797,6 +798,7 @@ export default function Home() {
   ]);
   const [appearanceIndex, setAppearanceIndex] = useState(0);
   const [introTreatment, setIntroTreatment] = useState<IntroTreatmentId>("none");
+  const [profileFrames, setProfileFrames] = useState(true);
   const [entityHighlights, setEntityHighlights] = useState(false);
   const [randomLabel, setRandomLabel] = useState("");
   const sourceInputRef = useRef<HTMLDivElement>(null);
@@ -809,11 +811,11 @@ export default function Home() {
     .split(/\r?\n/)
     .filter((line) => EXPERT_LINE_RE.test(line.trim()))
     .length;
-  const compactExpertLayout = effectiveStyle === "list";
+  const compactExpertLayout = style === "list";
   const plainTextLayout = effectiveStyle === "minimal" && sourceExpertCount === 0;
-  const expertCards = !plainTextLayout;
-  const angleGroups = !plainTextLayout;
-  const fullProfileCards = !compactExpertLayout && !plainTextLayout;
+  const expertCards = profileFrames && !plainTextLayout;
+  const angleGroups = profileFrames && !plainTextLayout;
+  const fullProfileCards = profileFrames && !compactExpertLayout && !plainTextLayout;
   const blackAngleTitles = true;
   const formatOptions = useMemo(
     () => ({ introTreatment, entityHighlights, expertCards, angleGroups, fullProfileCards, blackAngleTitles, emphasisVariant }),
@@ -832,9 +834,13 @@ export default function Home() {
       const savedLanguage = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
       const savedEntityHighlights =
         window.localStorage.getItem(ENTITY_HIGHLIGHT_STORAGE_KEY) === "true";
+      const savedProfileFrames = window.localStorage.getItem(PROFILE_FRAMES_STORAGE_KEY);
       restoreTimer = window.setTimeout(() => {
         if (savedLanguage === "zh" || savedLanguage === "ja" || savedLanguage === "en") {
           setLang(savedLanguage);
+        }
+        if (savedProfileFrames !== null) {
+          setProfileFrames(savedProfileFrames !== "false");
         }
         setEntityHighlights(savedEntityHighlights);
       }, 0);
@@ -870,6 +876,15 @@ export default function Home() {
     setEntityHighlights(enabled);
     try {
       window.localStorage.setItem(ENTITY_HIGHLIGHT_STORAGE_KEY, String(enabled));
+    } catch {
+      // The choice still works for the current visit.
+    }
+  }
+
+  function changeProfileFrames(enabled: boolean) {
+    setProfileFrames(enabled);
+    try {
+      window.localStorage.setItem(PROFILE_FRAMES_STORAGE_KEY, String(enabled));
     } catch {
       // The choice still works for the current visit.
     }
@@ -1098,6 +1113,7 @@ export default function Home() {
                 </button>
               ))}
             </div>
+            <label className="frameOption"><input type="checkbox" checked={profileFrames} onChange={(event) => changeProfileFrames(event.target.checked)} /><span>{t.profileFrames}</span></label>
             <label><input type="checkbox" checked={entityHighlights} onChange={(event) => changeEntityHighlights(event.target.checked)} /><span>{t.entityHighlight}</span></label>
           </div>
           <div
