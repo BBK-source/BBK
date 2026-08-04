@@ -259,6 +259,37 @@ function sanitizePastedContent(clipboardHtml: string) {
     .replace(/(?:<br>\s*){4,}/g, "<br><br>");
 }
 
+function prepareRichHtmlForGmail(element: HTMLElement) {
+  const clone = element.cloneNode(true) as HTMLElement;
+  clone.removeAttribute("class");
+
+  clone.querySelectorAll<HTMLElement>("*").forEach((node) => {
+    node.removeAttribute("class");
+    node.removeAttribute("contenteditable");
+    node.style.removeProperty("line-height");
+
+    if (node.style.position === "absolute") {
+      node.style.removeProperty("position");
+      node.style.removeProperty("left");
+      node.style.removeProperty("right");
+      node.style.removeProperty("top");
+      node.style.removeProperty("bottom");
+      if ((node.textContent ?? "").trim() === "•") {
+        node.style.marginRight = "5px";
+      }
+    } else if (node.style.position === "relative") {
+      node.style.removeProperty("position");
+    }
+
+    if (!(node.textContent ?? "").trim() && node.querySelector("br")) {
+      node.style.removeProperty("height");
+      node.style.removeProperty("min-height");
+    }
+  });
+
+  return clone.innerHTML;
+}
+
 function emphasisDecoration(palette: PaletteId, variant: EmphasisVariantId) {
   const colors = PALETTES[palette];
   if (variant === "marker") {
@@ -952,23 +983,32 @@ export default function Home() {
   async function copyRichText() {
     const element = previewRef.current;
     if (!element) return;
-    const rich = element.innerHTML;
+    const rich = prepareRichHtmlForGmail(element);
+    const richDocument = `<!doctype html><html><head><meta charset="utf-8"></head><body>${rich}</body></html>`;
     const plain = element.innerText;
     try {
       await navigator.clipboard.write([
         new ClipboardItem({
-          "text/html": new Blob([rich], { type: "text/html" }),
-          "text/plain": new Blob([plain], { type: "text/plain" }),
+          "text/html": new Blob([richDocument], { type: "text/html;charset=utf-8" }),
+          "text/plain": new Blob([plain], { type: "text/plain;charset=utf-8" }),
         }),
       ]);
     } catch {
+      const transfer = document.createElement("div");
+      transfer.setAttribute("aria-hidden", "true");
+      transfer.style.position = "fixed";
+      transfer.style.left = "-10000px";
+      transfer.style.top = "0";
+      transfer.innerHTML = rich;
+      document.body.appendChild(transfer);
       const range = document.createRange();
-      range.selectNodeContents(element);
+      range.selectNodeContents(transfer);
       const selection = window.getSelection();
       selection?.removeAllRanges();
       selection?.addRange(range);
       document.execCommand("copy");
       selection?.removeAllRanges();
+      transfer.remove();
     }
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1800);
