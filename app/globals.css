@@ -86,36 +86,31 @@ main { min-height: 100vh; }
 h1 { margin: 0; font-size: clamp(32px, 3.2vw, 52px); letter-spacing: -.045em; line-height: 1.08; font-weight: 760; }
 .subtitle { margin: 16px 0 0; color: var(--muted); font-size: 16px; }
 .heroAside {
-  position: relative; flex: 0 0 410px; align-self: stretch;
+  position: relative; flex: 0 0 auto; min-width: 300px; align-self: stretch;
   display: flex; align-items: flex-end; justify-content: flex-end;
 }
-.teamCameo {
-  position: absolute; inset: -8px 0 25px auto; width: 405px;
-  pointer-events: none; user-select: none;
+.panelCameo {
+  height: 56px; display: flex; align-items: center; gap: 5px;
+  pointer-events: none; user-select: none; white-space: nowrap;
 }
-.teamCameo::before {
-  content: ""; position: absolute; left: 38px; bottom: -2px; width: 214px; height: 116px;
-  border-radius: 50%; background: radial-gradient(circle, rgba(217,228,235,.7), rgba(242,245,247,0) 70%);
-}
-.teamCameo img {
-  position: absolute; left: 52px; bottom: -4px; width: 198px; height: auto;
-  display: block; opacity: .96; filter: drop-shadow(0 8px 12px rgba(29,47,60,.09));
+.panelCameo img {
+  flex: 0 0 auto; width: 72px; height: auto; display: block; opacity: .96;
+  transform: translateY(3px); filter: drop-shadow(0 4px 6px rgba(29,47,60,.1));
 }
 .cameoBubble {
-  position: absolute; z-index: 2; max-width: 172px; padding: 7px 11px;
-  border: 1px solid #d8e2e8; border-radius: 14px; background: rgba(255,255,255,.95);
-  color: #41515c; font-size: 11px; font-weight: 720; line-height: 1.35;
-  box-shadow: 0 5px 14px rgba(34,56,70,.07); white-space: nowrap;
+  position: relative; z-index: 2; padding: 4px 6px;
+  border: 1px solid #d8e2e8; border-radius: 10px; background: rgba(255,255,255,.97);
+  color: #41515c; font-size: 8px; font-weight: 720; line-height: 1.2;
+  box-shadow: 0 3px 8px rgba(34,56,70,.07); white-space: nowrap;
 }
 .cameoBubble::after {
-  content: ""; position: absolute; right: -5px; bottom: 9px; width: 9px; height: 9px;
+  content: ""; position: absolute; right: -4px; top: 50%; width: 7px; height: 7px;
   border-top: 1px solid #d8e2e8; border-right: 1px solid #d8e2e8;
-  background: rgba(255,255,255,.95); transform: rotate(45deg);
+  background: rgba(255,255,255,.97); transform: translateY(-50%) rotate(45deg);
 }
-.cameoBubbleOne { top: 6px; left: -24px; color: var(--blue-dark); }
-.cameoBubbleTwo { top: 47px; right: -4px; }
+.cameoBubbleOne { color: var(--blue-dark); }
 .cameoBubbleTwo::after {
-  left: -5px; right: auto; border-top: 0; border-right: 0;
+  left: -4px; right: auto; border-top: 0; border-right: 0;
   border-left: 1px solid #d8e2e8; border-bottom: 1px solid #d8e2e8;
 }
 .steps {
@@ -252,7 +247,7 @@ footer {
 @media (max-width: 1160px) {
   .hero { min-height: 0; padding-top: 38px; padding-bottom: 28px; align-items: end; }
   .heroAside { flex-basis: auto; align-self: auto; }
-  .teamCameo { display: none; }
+  .panelCameo { display: none; }
   .sponsorPoster { opacity: .34; }
 }
 
