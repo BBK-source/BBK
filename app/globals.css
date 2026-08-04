@@ -212,6 +212,7 @@ h1 { margin: 0; font-size: clamp(32px, 3.2vw, 52px); letter-spacing: -.045em; li
 .optionLabel { color: #8a949c; font-size: 10px; font-weight: 750; letter-spacing: .05em; text-transform: uppercase; }
 .optionBar label { display: flex; align-items: center; gap: 6px; color: #5e6972; font-size: 11px; cursor: pointer; }
 .optionBar input { width: 14px; height: 14px; accent-color: var(--blue-dark); cursor: pointer; }
+.optionBar .frameOption { color: var(--blue-dark); font-weight: 750; }
 .introTreatment {
   display: flex; align-items: center; gap: 3px; padding-right: 14px;
   border-right: 1px solid #dce3e7; color: #697680; font-size: 11px;
