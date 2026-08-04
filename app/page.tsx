@@ -1044,11 +1044,6 @@ export default function Home() {
           <p className="subtitle">{t.subtitle}</p>
         </div>
         <div className="heroAside">
-          <div className="teamCameo" aria-hidden="true">
-            <span className="cameoBubble cameoBubbleOne">{t.cameoOne}</span>
-            <span className="cameoBubble cameoBubbleTwo">{t.cameoTwo}</span>
-            <img src="/BBK/bbk-team-cameo.png" alt="" />
-          </div>
           <div className="steps">
             <span><b>1</b> {t.paste}</span><i />
             <span><b>2</b> {t.format}</span><i />
@@ -1062,6 +1057,11 @@ export default function Home() {
           <div className="panelHead">
             <div><span className="number">01</span><b>{t.source}</b></div>
             <div className="sourceActions">
+              <div className="panelCameo" aria-hidden="true">
+                <span className="cameoBubble cameoBubbleOne">{t.cameoOne}</span>
+                <img src="/BBK/bbk-team-cameo.png" alt="" />
+                <span className="cameoBubble cameoBubbleTwo">{t.cameoTwo}</span>
+              </div>
               {richLinks.length > 0 && <span className="linkBadge">↗ {richLinks.length} {t.linksKept}</span>}
               <button className="textButton" onClick={clearSource}>{t.clear}</button>
             </div>
