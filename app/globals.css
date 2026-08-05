@@ -136,13 +136,26 @@ h1 { margin: 0; font-size: clamp(32px, 3.2vw, 52px); letter-spacing: -.045em; li
 }
 .panelHead > div { display: flex; align-items: center; gap: 10px; font-size: 14px; }
 .number { color: var(--blue); font: 700 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace; }
-.textButton { color: #78838d; background: transparent; border: 0; font-size: 12px; }
-.textButton:hover { color: var(--red); }
 .sourceActions { display: flex !important; align-items: center; gap: 9px !important; }
+.sourceUtilityBar {
+  min-height: 42px; padding: 6px 14px; border-bottom: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  background: #fbfcfd;
+}
+.sourceLinkStatus { min-width: 0; min-height: 24px; display: flex; align-items: center; }
 .linkBadge {
-  padding: 4px 7px; border-radius: 999px; color: #257554; background: #e9f7f0;
+  padding: 5px 9px; border-radius: 999px; color: #257554; background: #e9f7f0;
   font-size: 10px; font-weight: 750; white-space: nowrap;
 }
+.clearButton {
+  min-width: 78px; min-height: 30px; padding: 0 12px; border: 1px solid #e5aaa4;
+  border-radius: 7px; color: #aa3e35; background: #fff5f3; font-size: 11px; font-weight: 800;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  box-shadow: 0 2px 7px rgba(170,62,53,.08);
+}
+.clearButton span { font-size: 16px; font-weight: 500; line-height: 1; }
+.clearButton:hover:not(:disabled) { color: #8e2f28; border-color: #d8827a; background: #ffebe8; transform: translateY(-1px); }
+.clearButton:disabled { color: #9ba4aa; border-color: #dce2e6; background: #f4f6f7; box-shadow: none; cursor: default; opacity: .68; }
 .live { font-size: 11px; color: #79838d; display: flex; align-items: center; gap: 6px; }
 .live i { width: 7px; height: 7px; border-radius: 50%; background: #47a878; box-shadow: 0 0 0 3px #e0f3e9; }
 .resultActions { display: flex !important; align-items: center; gap: 10px !important; }
