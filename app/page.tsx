@@ -144,6 +144,10 @@ function safeLink(value?: string) {
   }
 }
 
+function normalizeLinkLabel(value: string) {
+  return value.replace(/\s+/g, " ").trim();
+}
+
 function renderBookNow(url: string | undefined, palette: PaletteId) {
   const href = safeLink(url);
   const css = `color:${PALETTES[palette].accent};font-weight:700;text-decoration:underline;white-space:nowrap`;
@@ -951,13 +955,22 @@ export default function Home() {
   function syncSourceFromEditor() {
     const editor = sourceInputRef.current;
     if (!editor) return;
-    setSource(editor.innerText.replaceAll("\u00a0", " "));
     const links = Array.from(editor.querySelectorAll("a"))
-      .map((anchor) => ({
-        label: (anchor.textContent ?? "").replace(/\s+/g, " ").trim(),
-        href: anchor.getAttribute("href") ?? "",
-      }))
+      .map((anchor) => {
+        const label = normalizeLinkLabel(anchor.innerText || anchor.textContent || "");
+        if (label && anchor.textContent !== label) {
+          // Some source tables hard-wrap a link with <br> or nested blocks (for
+          // example "Book\nNow"). Flatten only the anchor contents so the text
+          // parser and the original URL continue to describe the same item.
+          anchor.textContent = label;
+        }
+        return {
+          label,
+          href: anchor.getAttribute("href") ?? "",
+        };
+      })
       .filter((link) => link.label && Boolean(safeLink(link.href)));
+    setSource(editor.innerText.replaceAll("\u00a0", " "));
     setRichLinks(links);
   }
 
@@ -1062,9 +1075,19 @@ export default function Home() {
                 <img src="/BBK/bbk-team-cameo.png" alt="" />
                 <span className="cameoBubble cameoBubbleTwo">{t.cameoTwo}</span>
               </div>
-              {richLinks.length > 0 && <span className="linkBadge">↗ {richLinks.length} {t.linksKept}</span>}
-              <button className="textButton" onClick={clearSource}>{t.clear}</button>
             </div>
+          </div>
+          <div className="sourceUtilityBar">
+            <div className="sourceLinkStatus" aria-live="polite">
+              {richLinks.length > 0 && <span className="linkBadge">↗ {richLinks.length} {t.linksKept}</span>}
+            </div>
+            <button
+              className="clearButton"
+              onClick={clearSource}
+              disabled={!source && richLinks.length === 0}
+            >
+              <span aria-hidden="true">×</span>{t.clear}
+            </button>
           </div>
           <div
             ref={sourceInputRef}
