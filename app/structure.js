@@ -1,11 +1,23 @@
 const EXPERT_LINE_RE =
   /^(?:[-•]\s*)?(?:#(?:[A-Z][A-Z0-9]*|\d+)(?:[.-]\d+)*|[A-Z][A-Z0-9]*(?:[.-]\d+)+)\s*[-–]/i;
 
-export const QUESTION_PREFIX_RE =
-  /^(?:(?:[QＱ]|Question)\s*[0-9０-９]*|質問\s*[0-9０-９]+|问题\s*[0-9０-９]+|問題\s*[0-9０-９]+|问\s*[0-9０-９]+|問\s*[0-9０-９]+|[0-9０-９]{1,2})\s*[.:：．、,，)）]\s*/i;
+// Screening sheets often use a two-level index such as Q1-1, Q 1.2 or
+// Ｑ１－３. Keep the separator set deliberately broad because copied text can
+// contain several visually similar Unicode hyphens.
+const INDEX_SEPARATOR = String.raw`[-‐‑‒–—―−－.．_/／]`;
+const LABELED_INDEX = String.raw`[0-9０-９]{1,3}(?:\s*${INDEX_SEPARATOR}\s*[0-9０-９]{1,3})*`;
+const BARE_INDEX = String.raw`[0-9０-９]{1,2}(?:\s*${INDEX_SEPARATOR}\s*[0-9０-９]{1,3})*`;
+const PREFIX_END = String.raw`(?:\s*[.:：．、,，)）]\s*|\s+(?=\S))`;
 
-export const ANSWER_PREFIX_RE =
-  /^(?:(?:[AＡ]|Answer)\s*[0-9０-９]*|回答\s*[0-9０-９]*|答\s*[0-9０-９]+)\s*[.:：．、,，)）]\s*/i;
+export const QUESTION_PREFIX_RE = new RegExp(
+  String.raw`^(?:(?:[QＱ]|Question)\s*(?:${LABELED_INDEX})?|(?:質問|问题|問題|问|問)\s*${LABELED_INDEX}|${BARE_INDEX})${PREFIX_END}`,
+  "i",
+);
+
+export const ANSWER_PREFIX_RE = new RegExp(
+  String.raw`^(?:(?:[AＡ]|Answer)\s*(?:${LABELED_INDEX})?|回答\s*(?:${LABELED_INDEX})?|答\s*${LABELED_INDEX})${PREFIX_END}`,
+  "i",
+);
 
 export const ARROW_ANSWER_RE = /^(?:>>+|→|⇒|->|=>)\s*/;
 
