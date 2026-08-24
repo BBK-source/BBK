@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import type { ClipboardEvent } from "react";
+import type { ClipboardEvent, MouseEvent as ReactMouseEvent } from "react";
 import {
   emphasizeCompanyNamesText,
   emphasizeCompaniesText,
@@ -29,6 +29,7 @@ type PaletteId = "tb" | "ocean" | "forest" | "plum" | "amber" | "slate";
 type EmphasisVariantId = "color" | "marker" | "colorMarker" | "strong" | "underline";
 type IntroTreatmentId = "none" | "color" | "bold" | "marker";
 type Appearance = { palette: PaletteId; emphasisVariant: EmphasisVariantId };
+type EditorPaletteKind = "text" | "highlight";
 type FormatOptions = {
   introTreatment: IntroTreatmentId;
   entityHighlights: boolean;
@@ -59,6 +60,18 @@ const PALETTES: Record<PaletteId, { accent: string; key: string; soft: string; b
 };
 const EMPHASIS_VARIANTS: EmphasisVariantId[] = ["color", "marker", "colorMarker", "strong", "underline"];
 const INTRO_TREATMENTS: IntroTreatmentId[] = ["none", "color", "bold", "marker"];
+const TEXT_COLOR_CHOICES = [
+  "#171717", "#434343", "#666666", "#999999", "#b7b7b7", "#ffffff",
+  "#980000", "#e83b2e", "#c34f32", "#f29900", "#9a6a22", "#6a4b17",
+  "#274e13", "#47745a", "#00875a", "#287c91", "#1769aa", "#365f78",
+  "#1c4587", "#3c78d8", "#674ea7", "#7b5b8e", "#b84562", "#a61c55",
+];
+const HIGHLIGHT_COLOR_CHOICES = [
+  "#fff2bf", "#fff0d0", "#fde2d7", "#fbe4eb", "#f5e8f0", "#eadcff",
+  "#dce9ff", "#d8eefb", "#e2f5f7", "#daf5e8", "#eef3d6", "#e9eef1",
+  "#ffe599", "#f9cb9c", "#f4cccc", "#ead1dc", "#d9d2e9", "#c9daf8",
+  "#cfe2f3", "#d0e0e3", "#b6d7a8", "#d9ead3", "#eeeeee", "#ffffff",
+];
 
 const UI = {
   zh: {
@@ -77,6 +90,7 @@ const UI = {
     palettes: ["TB 经典", "海洋蓝", "森林绿", "梅紫", "暖琥珀", "商务灰"],
     emphasisStyles: ["彩色粗体", "荧光笔", "彩色荧光", "黑色重粗", "彩色下划线"],
     options: "简易设置", introLabel: "介绍文", introTreatments: ["无", "标色", "加粗", "荧光"], profileFrames: "专家资料加框", entityHighlight: "自动标记公司／职位",
+    manualEdit: "手动调整", bold: "加粗／取消加粗", normal: "恢复常规", underline: "下划线", textColor: "文字颜色", highlightColor: "背景颜色", customColor: "自选颜色", removeHighlight: "去除背景", clearFormatting: "清除格式", undo: "撤销", redo: "重做", editHint: "选中文字后调整",
     previous: "上一个", next: "下一个",
     linksKept: "已保留链接",
     cameoOne: "哎呀妈呀，这玩意儿老好使了！",
@@ -98,6 +112,7 @@ const UI = {
     palettes: ["TBクラシック", "オーシャン", "フォレスト", "プラム", "アンバー", "ビジネスグレー"],
     emphasisStyles: ["カラー太字", "マーカー", "カラー＋マーカー", "黒の太字", "カラー下線"],
     options: "簡単設定", introLabel: "紹介文", introTreatments: ["なし", "カラー", "太字", "マーカー"], profileFrames: "専門家ごとに枠を付ける", entityHighlight: "会社・役職を自動強調",
+    manualEdit: "手動調整", bold: "太字／太字を解除", normal: "通常の太さ", underline: "下線", textColor: "文字色", highlightColor: "背景色", customColor: "色を選択", removeHighlight: "背景色を解除", clearFormatting: "書式をクリア", undo: "元に戻す", redo: "やり直す", editHint: "文字を選んで調整",
     previous: "前へ", next: "次へ",
     linksKept: "リンクを保持",
     cameoOne: "これ、めっちゃ便利やん！",
@@ -119,6 +134,7 @@ const UI = {
     palettes: ["TB classic", "Ocean", "Forest", "Plum", "Amber", "Business gray"],
     emphasisStyles: ["Color bold", "Highlighter", "Color + highlight", "Strong black", "Color underline"],
     options: "Simple settings", introLabel: "Introduction", introTreatments: ["None", "Color", "Bold", "Highlight"], profileFrames: "Frame each expert", entityHighlight: "Auto-highlight companies & roles",
+    manualEdit: "Edit", bold: "Bold / unbold", normal: "Regular weight", underline: "Underline", textColor: "Text color", highlightColor: "Highlight color", customColor: "Custom color", removeHighlight: "Remove highlight", clearFormatting: "Clear formatting", undo: "Undo", redo: "Redo", editHint: "Select text to edit",
     previous: "Previous", next: "Next",
     linksKept: "links preserved",
     cameoOne: "Yo, this thing’s fire!",
@@ -836,8 +852,15 @@ export default function Home() {
   const [profileFrames, setProfileFrames] = useState(true);
   const [entityHighlights, setEntityHighlights] = useState(false);
   const [randomLabel, setRandomLabel] = useState("");
+  const [activeEditorPalette, setActiveEditorPalette] = useState<EditorPaletteKind | null>(null);
+  const [editorTextColor, setEditorTextColor] = useState("#171717");
+  const [editorHighlightColor, setEditorHighlightColor] = useState("#fff2bf");
+  const [editorHistoryState, setEditorHistoryState] = useState({ canUndo: false, canRedo: false });
   const sourceInputRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
+  const editorToolbarRef = useRef<HTMLDivElement>(null);
+  const previewSelectionRef = useRef<Range | null>(null);
+  const editorHistoryRef = useRef<{ entries: string[]; index: number }>({ entries: [], index: -1 });
   const previewScrollTopRef = useRef(0);
   const t = UI[lang];
   const { palette, emphasisVariant } = appearanceHistory[appearanceIndex];
@@ -896,7 +919,23 @@ export default function Home() {
     if (!preview) return;
     const maximum = Math.max(0, preview.scrollHeight - preview.clientHeight);
     preview.scrollTop = Math.min(previewScrollTopRef.current, maximum);
+    previewSelectionRef.current = null;
+    editorHistoryRef.current = { entries: [preview.innerHTML], index: 0 };
+    setEditorHistoryState((current) => (
+      current.canUndo || current.canRedo ? { canUndo: false, canRedo: false } : current
+    ));
   }, [html]);
+
+  useEffect(() => {
+    if (!activeEditorPalette) return;
+    function closeEditorPalette(event: PointerEvent) {
+      if (!editorToolbarRef.current?.contains(event.target as Node)) {
+        setActiveEditorPalette(null);
+      }
+    }
+    document.addEventListener("pointerdown", closeEditorPalette);
+    return () => document.removeEventListener("pointerdown", closeEditorPalette);
+  }, [activeEditorPalette]);
 
   function changeLanguage(nextLanguage: Lang) {
     setLang(nextLanguage);
@@ -991,6 +1030,83 @@ export default function Home() {
     if (sourceInputRef.current) sourceInputRef.current.innerHTML = "";
     setSource("");
     setRichLinks([]);
+    setActiveEditorPalette(null);
+  }
+
+  function rememberPreviewSelection() {
+    const preview = previewRef.current;
+    const selection = window.getSelection();
+    if (!preview || !selection || selection.rangeCount === 0) return;
+    const range = selection.getRangeAt(0);
+    if (preview.contains(range.commonAncestorContainer)) {
+      previewSelectionRef.current = range.cloneRange();
+    }
+  }
+
+  function restorePreviewSelection() {
+    const preview = previewRef.current;
+    const savedRange = previewSelectionRef.current;
+    const selection = window.getSelection();
+    if (!preview || !savedRange || !selection || !preview.contains(savedRange.commonAncestorContainer)) {
+      return false;
+    }
+    preview.focus({ preventScroll: true });
+    selection.removeAllRanges();
+    selection.addRange(savedRange.cloneRange());
+    return true;
+  }
+
+  function preservePreviewSelection(event: ReactMouseEvent<HTMLElement>) {
+    event.preventDefault();
+    rememberPreviewSelection();
+  }
+
+  function recordPreviewHistory() {
+    const preview = previewRef.current;
+    if (!preview) return;
+    const history = editorHistoryRef.current;
+    const snapshot = preview.innerHTML;
+    if (history.entries[history.index] === snapshot) return;
+    const entries = [...history.entries.slice(0, history.index + 1), snapshot].slice(-60);
+    editorHistoryRef.current = { entries, index: entries.length - 1 };
+    setEditorHistoryState({ canUndo: entries.length > 1, canRedo: false });
+  }
+
+  function applyPreviewFormatting(command: string, value?: string, kind?: EditorPaletteKind) {
+    if (!restorePreviewSelection()) return;
+    document.execCommand("styleWithCSS", false, "true");
+
+    if (command === "regular") {
+      document.execCommand("removeFormat", false);
+      if (document.queryCommandState("bold")) document.execCommand("bold", false);
+    } else if (command === "highlight") {
+      if (!document.execCommand("hiliteColor", false, value)) {
+        document.execCommand("backColor", false, value);
+      }
+    } else {
+      document.execCommand(command, false, value);
+    }
+
+    if (kind === "text" && value) setEditorTextColor(value);
+    if (kind === "highlight" && value && value !== "transparent") setEditorHighlightColor(value);
+    rememberPreviewSelection();
+    recordPreviewHistory();
+  }
+
+  function stepPreviewHistory(direction: -1 | 1) {
+    const preview = previewRef.current;
+    const history = editorHistoryRef.current;
+    const nextIndex = history.index + direction;
+    if (!preview || nextIndex < 0 || nextIndex >= history.entries.length) return;
+    const scrollTop = preview.scrollTop;
+    preview.innerHTML = history.entries[nextIndex];
+    preview.scrollTop = scrollTop;
+    previewSelectionRef.current = null;
+    editorHistoryRef.current = { ...history, index: nextIndex };
+    setEditorHistoryState({
+      canUndo: nextIndex > 0,
+      canRedo: nextIndex < history.entries.length - 1,
+    });
   }
 
   async function copyRichText() {
@@ -1179,9 +1295,172 @@ export default function Home() {
             <label className="frameOption"><input type="checkbox" checked={profileFrames} onChange={(event) => changeProfileFrames(event.target.checked)} /><span>{t.profileFrames}</span></label>
             <label><input type="checkbox" checked={entityHighlights} onChange={(event) => changeEntityHighlights(event.target.checked)} /><span>{t.entityHighlight}</span></label>
           </div>
+          <div className="manualToolbar" ref={editorToolbarRef} aria-label={t.manualEdit}>
+            <span className="optionLabel manualToolbarLabel">{t.manualEdit}</span>
+            <button
+              className="editorTool editorBold"
+              disabled={!source}
+              title={t.bold}
+              aria-label={t.bold}
+              onMouseDown={preservePreviewSelection}
+              onClick={() => applyPreviewFormatting("bold")}
+            >B</button>
+            <button
+              className="editorTool editorRegular"
+              disabled={!source}
+              title={t.normal}
+              aria-label={t.normal}
+              onMouseDown={preservePreviewSelection}
+              onClick={() => applyPreviewFormatting("regular")}
+            >Aa</button>
+            <button
+              className="editorTool editorUnderline"
+              disabled={!source}
+              title={t.underline}
+              aria-label={t.underline}
+              onMouseDown={preservePreviewSelection}
+              onClick={() => applyPreviewFormatting("underline")}
+            >U</button>
+            <span className="editorDivider" aria-hidden="true" />
+            <button
+              className={`editorTool editorColorTool${activeEditorPalette === "text" ? " active" : ""}`}
+              disabled={!source}
+              title={t.textColor}
+              aria-label={t.textColor}
+              onMouseDown={preservePreviewSelection}
+              onClick={() => setActiveEditorPalette((current) => current === "text" ? null : "text")}
+            >
+              <span className="editorColorLetter">A</span>
+              <span className="editorColorLine" style={{ background: editorTextColor }} />
+            </button>
+            <button
+              className={`editorTool editorHighlightTool${activeEditorPalette === "highlight" ? " active" : ""}`}
+              disabled={!source}
+              title={t.highlightColor}
+              aria-label={t.highlightColor}
+              onMouseDown={preservePreviewSelection}
+              onClick={() => setActiveEditorPalette((current) => current === "highlight" ? null : "highlight")}
+            >
+              <span style={{ background: editorHighlightColor }}>A</span>
+            </button>
+            <button
+              className="editorTool editorClearFormat"
+              disabled={!source}
+              title={t.clearFormatting}
+              aria-label={t.clearFormatting}
+              onMouseDown={preservePreviewSelection}
+              onClick={() => applyPreviewFormatting("removeFormat")}
+            >T×</button>
+            <span className="editorDivider" aria-hidden="true" />
+            <button
+              className="editorTool editorHistoryButton"
+              disabled={!editorHistoryState.canUndo}
+              title={t.undo}
+              aria-label={t.undo}
+              onMouseDown={preservePreviewSelection}
+              onClick={() => stepPreviewHistory(-1)}
+            >↶</button>
+            <button
+              className="editorTool editorHistoryButton"
+              disabled={!editorHistoryState.canRedo}
+              title={t.redo}
+              aria-label={t.redo}
+              onMouseDown={preservePreviewSelection}
+              onClick={() => stepPreviewHistory(1)}
+            >↷</button>
+            <span className="editorHint">{t.editHint}</span>
+
+            {activeEditorPalette && (
+              <div className="editorPalette" role="dialog" aria-label={t.textColor}>
+                <div className="editorPaletteSection">
+                  <div className="editorPaletteHeading">
+                    <span>{t.textColor}</span>
+                    <label className="customColorPicker" title={t.customColor}>
+                      <span>＋</span>
+                      <input
+                        type="color"
+                        value={editorTextColor}
+                        aria-label={`${t.textColor} ${t.customColor}`}
+                        onPointerDown={rememberPreviewSelection}
+                        onChange={(event) => applyPreviewFormatting("foreColor", event.target.value, "text")}
+                      />
+                    </label>
+                  </div>
+                  <div className="editorColorGrid">
+                    {TEXT_COLOR_CHOICES.map((color) => (
+                      <button
+                        key={`text-${color}`}
+                        className={`colorSwatch${editorTextColor === color ? " selected" : ""}`}
+                        style={{ background: color }}
+                        title={color}
+                        aria-label={`${t.textColor} ${color}`}
+                        onMouseDown={preservePreviewSelection}
+                        onClick={() => applyPreviewFormatting("foreColor", color, "text")}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <div className="editorPaletteSection">
+                  <div className="editorPaletteHeading">
+                    <span>{t.highlightColor}</span>
+                    <label className="customColorPicker" title={t.customColor}>
+                      <span>＋</span>
+                      <input
+                        type="color"
+                        value={editorHighlightColor}
+                        aria-label={`${t.highlightColor} ${t.customColor}`}
+                        onPointerDown={rememberPreviewSelection}
+                        onChange={(event) => applyPreviewFormatting("highlight", event.target.value, "highlight")}
+                      />
+                    </label>
+                  </div>
+                  <div className="editorColorGrid">
+                    {HIGHLIGHT_COLOR_CHOICES.map((color) => (
+                      <button
+                        key={`highlight-${color}`}
+                        className={`colorSwatch${editorHighlightColor === color ? " selected" : ""}`}
+                        style={{ background: color }}
+                        title={color}
+                        aria-label={`${t.highlightColor} ${color}`}
+                        onMouseDown={preservePreviewSelection}
+                        onClick={() => applyPreviewFormatting("highlight", color, "highlight")}
+                      />
+                    ))}
+                  </div>
+                  <button
+                    className="removeHighlightButton"
+                    onMouseDown={preservePreviewSelection}
+                    onClick={() => applyPreviewFormatting("highlight", "transparent", "highlight")}
+                  >{t.removeHighlight}</button>
+                </div>
+              </div>
+            )}
+          </div>
           <div
             ref={previewRef}
             className={`preview style-${effectiveStyle}`}
+            contentEditable
+            suppressContentEditableWarning
+            role="textbox"
+            aria-multiline="true"
+            aria-label={t.result}
+            onMouseUp={rememberPreviewSelection}
+            onKeyUp={rememberPreviewSelection}
+            onInput={() => {
+              rememberPreviewSelection();
+              recordPreviewHistory();
+            }}
+            onKeyDown={(event) => {
+              if (!(event.metaKey || event.ctrlKey)) return;
+              const key = event.key.toLowerCase();
+              if (key === "z") {
+                event.preventDefault();
+                stepPreviewHistory(event.shiftKey ? 1 : -1);
+              } else if (key === "y") {
+                event.preventDefault();
+                stepPreviewHistory(1);
+              }
+            }}
             onScroll={(event) => {
               previewScrollTopRef.current = event.currentTarget.scrollTop;
             }}
