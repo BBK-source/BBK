@@ -3,6 +3,64 @@ const HTML_TOKEN_CLOSE = "\uE001";
 const MARK_TOKEN_OPEN = "\uE100";
 const MARK_TOKEN_CLOSE = "\uE101";
 
+const KNOWN_COMPANIES = [
+  "Applied Materials", "Tokyo Electron", "Lam Research", "GlobalFoundries",
+  "Taiwan Semiconductor Manufacturing Company", "SK hynix", "SK Hynix",
+  "Samsung Electronics", "Samsung Semiconductor", "Micron Technology",
+  "Intel Foundry", "Intel", "TSMC", "ASE Technology", "ASE", "Amkor",
+  "JCET", "SPIL", "PTI", "ChipMOS", "Renesas", "Kioxia", "Advantest",
+  "ASML", "KLA", "SCREEN", "DISCO", "ACCETECH", "ACCRETECH", "ASMPT",
+  "BESI", "BE Semiconductor Industries", "Hanmi Semiconductor", "Hanmi",
+  "TOWA", "Fasford", "Shinkawa", "APIC Yamada", "SEMES", "K&amp;S", "K&S",
+  "Qualcomm", "Broadcom", "NVIDIA", "AMD", "MediaTek", "Foxconn",
+  "Hon Hai", "Pegatron", "Quanta", "Wistron", "Inventec", "SMIC",
+  "Apple", "Google Cloud", "Google", "Microsoft", "Amazon Web Services",
+  "Amazon", "AWS", "Oracle", "OpenAI", "Anthropic", "Meta", "IBM",
+  "Salesforce", "SAP", "Palantir", "SoftBank", "NTT DATA", "NTT",
+  "Tencent Games", "Tencent", "NetEase Games", "NetEase", "Alibaba Cloud",
+  "Alibaba", "ByteDance", "Baidu", "Huawei", "Xiaomi", "Bilibili",
+  "miHoYo", "HoYoverse", "Nexon", "NCSoft", "Krafton", "Pearl Abyss",
+  "Bandai Namco", "Nintendo", "Sega", "Capcom", "Konami", "Square Enix",
+  "Riot Games", "Epic Games", "Ubisoft", "Activision Blizzard", "Electronic Arts",
+  "Siemens Energy", "Siemens", "Schneider Electric", "Johnson Controls",
+  "Mitsubishi Electric", "Mitsubishi Heavy Industries", "Hitachi", "Fujitsu",
+  "Panasonic", "Sony", "Denso", "Toyota", "Honda", "Bosch", "BYD", "CATL",
+  "Bloom Energy", "Ceres Power", "Ceres", "Sunfire", "Topsoe", "Höganäs",
+  "Equinix", "Digital Realty", "MC Digital Realty", "CBRE", "Azbil", "JERA",
+  "Unitree Robotics", "Unitree", "DeepSeek", "SiliconFlow", "DataCanvas",
+  "Infinigence", "AutoDL", "Proya Cosmetics", "Proya", "Nivea", "Shiseido",
+  "L’Oréal", "L'Oreal", "Estée Lauder", "Unicharm", "Kao", "P&G",
+  "BCG", "Boston Consulting Group", "McKinsey", "Bain", "Deloitte", "PwC",
+  "東京エレクトロン", "アドバンテスト", "キオクシア", "ルネサス",
+  "ソニーセミコンダクタソリューションズ", "ソニー", "パナソニック",
+  "三菱電機", "三菱重工業", "日立製作所", "富士通", "デンソー", "トヨタ",
+  "日本特殊陶業", "東芝エネルギーシステムズ", "東芝", "シュナイダーエレクトリック",
+  "ジョンソンコントロールズ", "アズビル", "新菱冷熱", "ジャパンマテリアル",
+  "大成建設", "大林組", "オルガノ", "アルバック", "芝浦メカトロニクス",
+  "ファスフォード", "キーエンス", "ミスミ", "ベネッセ", "リクルート",
+  "腾讯游戏", "腾讯", "网易游戏", "网易", "阿里巴巴", "阿里云", "字节跳动",
+  "华为", "百度", "小米", "比亚迪", "宁德时代", "台积电", "中芯国际",
+  "长电科技", "通富微电", "华天科技", "立讯精密", "生益科技", "安集科技",
+  "鼎龙股份", "江化微", "华海诚科", "德邦科技", "宇树科技", "宇树机器人",
+  "硅基流动", "寒武纪", "地平线", "蔚来", "理想汽车", "小鹏汽车",
+];
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+const KNOWN_COMPANY_RE = new RegExp(
+  `(?<![A-Za-z0-9])(?:${KNOWN_COMPANIES
+    .slice()
+    .sort((left, right) => right.length - left.length)
+    .map(escapeRegExp)
+    .join("|")})(?![A-Za-z0-9])`,
+  "giu",
+);
+
+const NON_COMPANY_EMPLOYMENT_TARGET =
+  /^(?:AI|EU|UK|US|USA|APAC|EMEA|GPU|HBM|OEM|OSAT|IDM|R&D|QA|Current|Former|Present|Global|International)$/i;
+
 function token(index, open, close) {
   return `${open}${index}${close}`;
 }
@@ -40,10 +98,20 @@ function applyEmphasis(html, color, scope, includeEntities = true, decoration = 
   };
 
   if (includeEntities) {
-    // English company names with a legal or descriptive suffix.
+    // English and European legal names, including Co., Ltd., GmbH, AG and Pte Ltd.
     markMatch(
-      /\b[A-Z][A-Za-z0-9&'’.\-]*(?:\s+[A-Z][A-Za-z0-9&'’.\-]*){0,5}\s+(?:Inc\.?|Corp(?:oration)?\.?|LLC|PLC|Limited|Ltd\.?|Holdings?|Group|Technolog(?:y|ies)|Systems?|Motors?|Bank|Airlines?|Industries|Solutions|Partners)\b/g,
+      /\b[A-Z][A-Za-z0-9&'’.\-]*(?:\s+(?:&|of|[A-Z][A-Za-z0-9&'’.\-]*)){0,6}(?:,\s*|\s+)(?:Co\.,?\s*(?:Ltd\.?|Limited)|Co\.?\s+Ltd\.?|Incorporated|Inc\.?|Corporation|Corp\.?|L\.L\.C\.?|LLC|P\.L\.C\.?|PLC|Limited|Ltd\.?|GmbH(?:\s*&\s*Co\.?\s*KG)?|AG|SE|KG|B\.V\.?|BV|N\.V\.?|NV|S\.A\.S\.?|SAS|S\.p\.A\.?|S\.A\.?|Pte\.?\s*Ltd\.?|K\.K\.?|Holdings?|Group|Technolog(?:y|ies)|Systems?|Motors?|Bank|Airlines?|Industries|Solutions|Partners|Semiconductors?|Electronics|Electric|Energy|Materials|Pharmaceuticals|Robotics|Capital|Ventures|Consulting)\b/g,
     );
+
+    // Japanese corporate prefixes are otherwise easy to miss because the
+    // legal designator comes before the actual company name.
+    markMatch(
+      /(?:株式会社|有限会社|合同会社|（株）|\(株\)|㈱)[\u3400-\u9fffァ-ヶーA-Za-z0-9・&.]{2,32}/g,
+    );
+
+    // Established short names and brands across semiconductor, technology,
+    // energy, industrial, gaming and consumer sectors.
+    markMatch(KNOWN_COMPANY_RE);
 
     // English brand names in Japanese prose and comma-separated company lists.
     markMatch(
@@ -55,8 +123,14 @@ function applyEmphasis(html, color, scope, includeEntities = true, decoration = 
 
     // English companies following an employment or relationship preposition.
     output = output.replace(
-      /\b(at|from|with|within|for)\s+([A-Z][A-Za-z0-9&'’.\-]*(?:\s+[A-Z][A-Za-z0-9&'’.\-]*){0,5})(?=\s*(?:[,(;]|$|にて|では|で))/g,
-      (_, prefix, company) => `${prefix} ${mark(company)}`,
+      /\b(at|from|with|within|for|joined)\s+([A-Z][A-Za-z0-9&'’.\-]*(?:\s+(?:&|of|[A-Z][A-Za-z0-9&'’.\-]*)){0,5})(?=\s*(?:[,(;|]|$|にて|では|で))/g,
+      (value, prefix, company) => {
+        if (NON_COMPANY_EMPLOYMENT_TARGET.test(company)) return value;
+        if (/\b(?:Director|Manager|Officer|Engineer|Consultant|President|Advisor|Analyst|Assistant|Specialist|Executive)\b/i.test(company)) {
+          return value;
+        }
+        return `${prefix} ${mark(company)}`;
+      },
     );
 
     // Chinese companies, including names in prose and company lists.
@@ -77,9 +151,9 @@ function applyEmphasis(html, color, scope, includeEntities = true, decoration = 
       (_, prefix, company) => `${prefix}${mark(company)}`,
     );
 
-    // Japanese companies with common corporate suffixes.
+    // Japanese companies with common corporate and industry suffixes.
     output = output.replace(
-      /(^|[、。；;（(]\s*|より|から|現在|元|前)([\u3400-\u9fffァ-ヶー]{2,24}?(?:株式会社|自動車|電機|製作所|グループ|工業|製鋼所|銀行|証券|保険|航空|鉄道|商事|化学|システムズ|テクノロジーズ))/g,
+      /(^|[、。；;（(]\s*|より|から|現在|元|前)([\u3400-\u9fffァ-ヶー]{2,28}?(?:株式会社|自動車|電機|製作所|グループ|工業|製鋼所|銀行|証券|保険|航空|鉄道|商事|化学|システムズ|テクノロジーズ|半導体|エレクトロニクス|エナジー|ソリューションズ|製薬|製鉄|ホールディングス|ファシリティーズ|不動産|建設|化粧品|ロボティクス))/g,
       (_, prefix, company) => `${prefix}${mark(company)}`,
     );
 
