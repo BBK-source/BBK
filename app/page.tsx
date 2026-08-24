@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import type { ClipboardEvent, MouseEvent as ReactMouseEvent } from "react";
+import type { ClipboardEvent, PointerEvent as ReactPointerEvent } from "react";
 import {
   emphasizeCompanyNamesText,
   emphasizeCompaniesText,
@@ -860,6 +860,8 @@ export default function Home() {
   const previewRef = useRef<HTMLDivElement>(null);
   const editorToolbarRef = useRef<HTMLDivElement>(null);
   const previewSelectionRef = useRef<Range | null>(null);
+  const toolbarSelectionLockRef = useRef(false);
+  const selectionRestoreFrameRef = useRef<number | null>(null);
   const editorHistoryRef = useRef<{ entries: string[]; index: number }>({ entries: [], index: -1 });
   const previewScrollTopRef = useRef(0);
   const t = UI[lang];
@@ -936,6 +938,30 @@ export default function Home() {
     document.addEventListener("pointerdown", closeEditorPalette);
     return () => document.removeEventListener("pointerdown", closeEditorPalette);
   }, [activeEditorPalette]);
+
+  useEffect(() => {
+    function trackPreviewSelection() {
+      if (toolbarSelectionLockRef.current) return;
+      const preview = previewRef.current;
+      const selection = window.getSelection();
+      if (!preview || !selection || selection.rangeCount === 0) return;
+      const range = selection.getRangeAt(0);
+      if (
+        preview.contains(range.startContainer)
+        && preview.contains(range.endContainer)
+      ) {
+        previewSelectionRef.current = range.cloneRange();
+      }
+    }
+
+    document.addEventListener("selectionchange", trackPreviewSelection);
+    return () => {
+      document.removeEventListener("selectionchange", trackPreviewSelection);
+      if (selectionRestoreFrameRef.current !== null) {
+        window.cancelAnimationFrame(selectionRestoreFrameRef.current);
+      }
+    };
+  }, []);
 
   function changeLanguage(nextLanguage: Lang) {
     setLang(nextLanguage);
@@ -1038,7 +1064,10 @@ export default function Home() {
     const selection = window.getSelection();
     if (!preview || !selection || selection.rangeCount === 0) return;
     const range = selection.getRangeAt(0);
-    if (preview.contains(range.commonAncestorContainer)) {
+    if (
+      preview.contains(range.startContainer)
+      && preview.contains(range.endContainer)
+    ) {
       previewSelectionRef.current = range.cloneRange();
     }
   }
@@ -1047,18 +1076,38 @@ export default function Home() {
     const preview = previewRef.current;
     const savedRange = previewSelectionRef.current;
     const selection = window.getSelection();
-    if (!preview || !savedRange || !selection || !preview.contains(savedRange.commonAncestorContainer)) {
+    if (
+      !preview
+      || !savedRange
+      || !selection
+      || !preview.contains(savedRange.startContainer)
+      || !preview.contains(savedRange.endContainer)
+    ) {
       return false;
     }
-    preview.focus({ preventScroll: true });
+    const range = savedRange.cloneRange();
+    if (document.activeElement !== preview) preview.focus({ preventScroll: true });
     selection.removeAllRanges();
-    selection.addRange(savedRange.cloneRange());
+    selection.addRange(range);
     return true;
   }
 
-  function preservePreviewSelection(event: ReactMouseEvent<HTMLElement>) {
-    event.preventDefault();
+  function preservePreviewSelection(event: ReactPointerEvent<HTMLDivElement>) {
     rememberPreviewSelection();
+    toolbarSelectionLockRef.current = true;
+    const target = event.target as HTMLElement;
+    if (!target.closest('input[type="color"]')) event.preventDefault();
+  }
+
+  function releasePreviewSelection() {
+    if (selectionRestoreFrameRef.current !== null) {
+      window.cancelAnimationFrame(selectionRestoreFrameRef.current);
+    }
+    selectionRestoreFrameRef.current = window.requestAnimationFrame(() => {
+      restorePreviewSelection();
+      toolbarSelectionLockRef.current = false;
+      selectionRestoreFrameRef.current = null;
+    });
   }
 
   function recordPreviewHistory() {
@@ -1091,6 +1140,7 @@ export default function Home() {
     if (kind === "highlight" && value && value !== "transparent") setEditorHighlightColor(value);
     rememberPreviewSelection();
     recordPreviewHistory();
+    releasePreviewSelection();
   }
 
   function stepPreviewHistory(direction: -1 | 1) {
@@ -1295,14 +1345,20 @@ export default function Home() {
             <label className="frameOption"><input type="checkbox" checked={profileFrames} onChange={(event) => changeProfileFrames(event.target.checked)} /><span>{t.profileFrames}</span></label>
             <label><input type="checkbox" checked={entityHighlights} onChange={(event) => changeEntityHighlights(event.target.checked)} /><span>{t.entityHighlight}</span></label>
           </div>
-          <div className="manualToolbar" ref={editorToolbarRef} aria-label={t.manualEdit}>
+          <div
+            className="manualToolbar"
+            ref={editorToolbarRef}
+            aria-label={t.manualEdit}
+            onPointerDownCapture={preservePreviewSelection}
+            onPointerUpCapture={releasePreviewSelection}
+            onPointerCancel={releasePreviewSelection}
+          >
             <span className="optionLabel manualToolbarLabel">{t.manualEdit}</span>
             <button
               className="editorTool editorBold"
               disabled={!source}
               title={t.bold}
               aria-label={t.bold}
-              onMouseDown={preservePreviewSelection}
               onClick={() => applyPreviewFormatting("bold")}
             >B</button>
             <button
@@ -1310,7 +1366,6 @@ export default function Home() {
               disabled={!source}
               title={t.normal}
               aria-label={t.normal}
-              onMouseDown={preservePreviewSelection}
               onClick={() => applyPreviewFormatting("regular")}
             >Aa</button>
             <button
@@ -1318,7 +1373,6 @@ export default function Home() {
               disabled={!source}
               title={t.underline}
               aria-label={t.underline}
-              onMouseDown={preservePreviewSelection}
               onClick={() => applyPreviewFormatting("underline")}
             >U</button>
             <span className="editorDivider" aria-hidden="true" />
@@ -1327,7 +1381,6 @@ export default function Home() {
               disabled={!source}
               title={t.textColor}
               aria-label={t.textColor}
-              onMouseDown={preservePreviewSelection}
               onClick={() => setActiveEditorPalette((current) => current === "text" ? null : "text")}
             >
               <span className="editorColorLetter">A</span>
@@ -1338,7 +1391,6 @@ export default function Home() {
               disabled={!source}
               title={t.highlightColor}
               aria-label={t.highlightColor}
-              onMouseDown={preservePreviewSelection}
               onClick={() => setActiveEditorPalette((current) => current === "highlight" ? null : "highlight")}
             >
               <span style={{ background: editorHighlightColor }}>A</span>
@@ -1348,7 +1400,6 @@ export default function Home() {
               disabled={!source}
               title={t.clearFormatting}
               aria-label={t.clearFormatting}
-              onMouseDown={preservePreviewSelection}
               onClick={() => applyPreviewFormatting("removeFormat")}
             >T×</button>
             <span className="editorDivider" aria-hidden="true" />
@@ -1357,7 +1408,6 @@ export default function Home() {
               disabled={!editorHistoryState.canUndo}
               title={t.undo}
               aria-label={t.undo}
-              onMouseDown={preservePreviewSelection}
               onClick={() => stepPreviewHistory(-1)}
             >↶</button>
             <button
@@ -1365,7 +1415,6 @@ export default function Home() {
               disabled={!editorHistoryState.canRedo}
               title={t.redo}
               aria-label={t.redo}
-              onMouseDown={preservePreviewSelection}
               onClick={() => stepPreviewHistory(1)}
             >↷</button>
             <span className="editorHint">{t.editHint}</span>
@@ -1381,7 +1430,6 @@ export default function Home() {
                         type="color"
                         value={editorTextColor}
                         aria-label={`${t.textColor} ${t.customColor}`}
-                        onPointerDown={rememberPreviewSelection}
                         onChange={(event) => applyPreviewFormatting("foreColor", event.target.value, "text")}
                       />
                     </label>
@@ -1394,7 +1442,6 @@ export default function Home() {
                         style={{ background: color }}
                         title={color}
                         aria-label={`${t.textColor} ${color}`}
-                        onMouseDown={preservePreviewSelection}
                         onClick={() => applyPreviewFormatting("foreColor", color, "text")}
                       />
                     ))}
@@ -1409,7 +1456,6 @@ export default function Home() {
                         type="color"
                         value={editorHighlightColor}
                         aria-label={`${t.highlightColor} ${t.customColor}`}
-                        onPointerDown={rememberPreviewSelection}
                         onChange={(event) => applyPreviewFormatting("highlight", event.target.value, "highlight")}
                       />
                     </label>
@@ -1422,14 +1468,12 @@ export default function Home() {
                         style={{ background: color }}
                         title={color}
                         aria-label={`${t.highlightColor} ${color}`}
-                        onMouseDown={preservePreviewSelection}
                         onClick={() => applyPreviewFormatting("highlight", color, "highlight")}
                       />
                     ))}
                   </div>
                   <button
                     className="removeHighlightButton"
-                    onMouseDown={preservePreviewSelection}
                     onClick={() => applyPreviewFormatting("highlight", "transparent", "highlight")}
                   >{t.removeHighlight}</button>
                 </div>
