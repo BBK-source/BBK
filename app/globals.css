@@ -47,6 +47,11 @@ main { min-height: 100vh; }
   color: #6c7780; font-size: 11px;
 }
 .languageSwitch button.active { background: white; color: var(--blue-dark); font-weight: 750; box-shadow: 0 1px 4px rgba(27,48,62,.12); }
+.languageLinkButton {
+  flex: 0 0 auto; width: 30px; height: 30px; padding: 0; border: 1px solid #d8e1e6;
+  border-radius: 8px; background: #fff; color: var(--blue-dark); font-size: 14px; font-weight: 800;
+}
+.languageLinkButton:hover, .languageLinkButton.copied { border-color: #8ba5b5; background: #edf4f7; }
 
 .hero {
   max-width: 1380px; min-height: 188px; margin: 0 auto; padding: 30px 4vw 22px;
@@ -138,10 +143,23 @@ h1 { margin: 0; font-size: clamp(32px, 3.2vw, 52px); letter-spacing: -.045em; li
 .number { color: var(--blue); font: 700 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace; }
 .sourceActions { display: flex !important; align-items: center; gap: 9px !important; }
 .sourceUtilityBar {
-  min-height: 42px; padding: 6px 14px; border-bottom: 1px solid var(--line);
+  min-height: 48px; padding: 7px 14px; border-bottom: 1px solid var(--line);
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   background: #fbfcfd;
 }
+.sourceDiagnostics { min-width: 0; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.diagnosticEmpty { color: #89939a; font-size: 10px; }
+.diagnosticChip {
+  padding: 4px 7px; border: 1px solid #dce4e8; border-radius: 999px;
+  background: #fff; color: #69757e; font-size: 9px; white-space: nowrap;
+}
+.diagnosticChip b { color: #344b59; font-size: 10px; }
+.diagnosticState {
+  max-width: 100%; padding: 4px 7px; border-radius: 6px; font-size: 9px; font-weight: 750;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.diagnosticState.ok { color: #257554; background: #e9f7f0; }
+.diagnosticState.warning { color: #9a4339; background: #fff0ed; }
 .sourceLinkStatus { min-width: 0; min-height: 24px; display: flex; align-items: center; }
 .linkBadge {
   padding: 5px 9px; border-radius: 999px; color: #257554; background: #e9f7f0;
@@ -241,7 +259,7 @@ h1 { margin: 0; font-size: clamp(32px, 3.2vw, 52px); letter-spacing: -.045em; li
 .manualToolbar {
   position: relative; z-index: 5; min-height: 44px; padding: 6px 12px;
   border-bottom: 1px solid var(--line); background: #fff;
-  display: flex; align-items: center; gap: 5px;
+  display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
 }
 .manualToolbarLabel { margin-right: 4px; white-space: nowrap; }
 .editorTool {
@@ -262,6 +280,17 @@ h1 { margin: 0; font-size: clamp(32px, 3.2vw, 52px); letter-spacing: -.045em; li
 .editorClearFormat { width: 32px; font-size: 11px; font-weight: 700; }
 .editorHistoryButton { font-size: 18px; }
 .editorHint { margin-left: auto; color: #8c969d; font-size: 10px; white-space: nowrap; }
+.editorHint.notice { color: #257554; font-weight: 750; }
+.companyRuleButton, .dictionaryButton, .editLockButton {
+  min-height: 29px; padding: 0 7px; border: 1px solid #d8e1e6; border-radius: 6px;
+  background: #fff; color: #53616b; font-size: 9px; font-weight: 750; white-space: nowrap;
+}
+.companyRuleButton:hover:not(:disabled), .dictionaryButton:hover:not(:disabled), .dictionaryButton.active,
+.editLockButton:hover, .editLockButton.active { border-color: #8ba5b5; background: #edf4f7; color: var(--blue-dark); }
+.companyRuleButton.include { color: #287357; }
+.companyRuleButton.exclude { color: #99534c; }
+.companyRuleButton:disabled, .dictionaryButton:disabled { opacity: .35; cursor: default; }
+.editLockButton { margin-left: 2px; }
 .editorPalette {
   position: absolute; z-index: 10; top: calc(100% + 6px); left: 88px;
   width: 232px; padding: 11px; border: 1px solid #d9e1e6; border-radius: 10px;
@@ -286,6 +315,30 @@ h1 { margin: 0; font-size: clamp(32px, 3.2vw, 52px); letter-spacing: -.045em; li
   font-size: 10px; font-weight: 650;
 }
 .removeHighlightButton:hover { color: var(--red); }
+.companyDictionaryPanel {
+  position: absolute; z-index: 11; top: calc(100% + 6px); right: 12px;
+  width: min(330px, calc(100% - 24px)); max-height: 310px; overflow-y: auto;
+  padding: 12px; border: 1px solid #d9e1e6; border-radius: 10px;
+  background: #fff; box-shadow: 0 12px 34px rgba(34,56,70,.17);
+}
+.dictionaryHeading { display: flex; align-items: center; justify-content: space-between; color: #344b59; font-size: 11px; }
+.dictionaryHeading span { min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; background: #edf4f7; display: grid; place-items: center; font-size: 9px; }
+.dictionarySection { margin-top: 11px; }
+.dictionarySection > span { display: block; margin-bottom: 6px; color: #7b868e; font-size: 9px; font-weight: 750; text-transform: uppercase; letter-spacing: .04em; }
+.dictionaryEntries { display: flex; gap: 5px; flex-wrap: wrap; }
+.dictionaryEntries i { color: #9aa3aa; font-size: 10px; font-style: normal; }
+.dictionaryEntry {
+  max-width: 100%; min-height: 25px; padding: 3px 3px 3px 8px; border: 1px solid #dce4e8;
+  border-radius: 999px; display: inline-flex; align-items: center; gap: 4px;
+  color: #52606a; background: #f8fafb; font-size: 10px;
+}
+.dictionaryEntry.learned { border-color: #cbe5d8; background: #f1faf5; color: #28674e; }
+.dictionaryEntry.ignored { border-color: #ead3cf; background: #fff6f4; color: #8d4d46; }
+.dictionaryEntry button {
+  width: 19px; height: 19px; padding: 0; border: 0; border-radius: 50%;
+  background: transparent; color: currentColor; font-size: 13px; line-height: 1;
+}
+.dictionaryEntry button:hover { background: rgba(0,0,0,.07); }
 .preview {
   flex: 1 1 auto; min-height: 0; padding: 18px; outline: 0; overflow-x: hidden; overflow-y: scroll;
   font-family: Arial, "Noto Sans JP", "Noto Sans KR", sans-serif; font-size: 12px; line-height: 1.45; color: #171717; background: white;
@@ -324,6 +377,8 @@ footer {
   .styleBar { align-items: flex-start; }
   .editorHint { display: none; }
   .editorPalette { left: 12px; }
+  .manualToolbarLabel { width: 100%; }
+  .editorHint { margin-left: 0; width: 100%; }
   .randomButton { min-width: 98px; }
   footer { flex-direction: column; }
 }
@@ -336,4 +391,5 @@ footer {
   .topbar { padding: 0 14px; }
   .brand > span:last-child { display: none; }
   .languageSwitch button { padding: 0 6px; font-size: 10px; }
+  .languageLinkButton { display: none; }
 }
