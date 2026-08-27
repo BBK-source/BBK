@@ -15,7 +15,7 @@ html, body { margin: 0; min-height: 100%; background: var(--canvas); color: var(
 
 body {
   font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    "Noto Sans SC", "Noto Sans JP", Arial, sans-serif;
+    "Noto Sans SC", "Noto Sans JP", "Noto Sans KR", Arial, sans-serif;
 }
 
 button, .sourceEditor { font: inherit; }
@@ -288,7 +288,7 @@ h1 { margin: 0; font-size: clamp(32px, 3.2vw, 52px); letter-spacing: -.045em; li
 .removeHighlightButton:hover { color: var(--red); }
 .preview {
   flex: 1 1 auto; min-height: 0; padding: 18px; outline: 0; overflow-x: hidden; overflow-y: scroll;
-  font-family: Arial, "Noto Sans JP", sans-serif; font-size: 12px; line-height: 1.45; color: #171717; background: white;
+  font-family: Arial, "Noto Sans JP", "Noto Sans KR", sans-serif; font-size: 12px; line-height: 1.45; color: #171717; background: white;
   overscroll-behavior: contain; scrollbar-gutter: stable;
 }
 .sourceEditor::-webkit-scrollbar, .preview::-webkit-scrollbar { width: 11px; }
@@ -330,4 +330,10 @@ footer {
 
 @media (max-width: 680px) {
   .sponsorWall { display: none; }
+}
+
+@media (max-width: 420px) {
+  .topbar { padding: 0 14px; }
+  .brand > span:last-child { display: none; }
+  .languageSwitch button { padding: 0 6px; font-size: 10px; }
 }

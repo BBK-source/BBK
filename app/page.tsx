@@ -24,7 +24,7 @@ import {
 } from "./availability.js";
 
 type StyleId = "smart" | "classic" | "list" | "qa" | "minimal";
-type Lang = "zh" | "ja" | "en";
+type Lang = "zh" | "ja" | "en" | "ko";
 type PaletteId = "tb" | "ocean" | "forest" | "plum" | "amber" | "slate";
 type EmphasisVariantId = "color" | "marker" | "colorMarker" | "strong" | "underline";
 type IntroTreatmentId = "none" | "color" | "bold" | "marker";
@@ -43,6 +43,13 @@ type RichLink = { label: string; href: string };
 
 const STYLE_IDS: StyleId[] = ["smart", "classic", "list", "qa", "minimal"];
 const VISIBLE_STYLE_IDS: StyleId[] = ["smart", "list", "qa"];
+const LANGUAGES: Lang[] = ["zh", "ja", "en", "ko"];
+const LANGUAGE_LABELS: Record<Lang, string> = {
+  zh: "中文",
+  ja: "日本語",
+  en: "English",
+  ko: "한국어",
+};
 const LANGUAGE_STORAGE_KEY = "bbk-bunken-language";
 const ENTITY_HIGHLIGHT_STORAGE_KEY = "bbk-bunken-entity-highlights";
 const PROFILE_FRAMES_STORAGE_KEY = "bbk-bunken-profile-frames";
@@ -139,6 +146,28 @@ const UI = {
     linksKept: "links preserved",
     cameoOne: "Yo, this thing’s fire!",
     cameoTwo: "No more hand-formatting, fam.",
+  },
+  ko: {
+    headerHint: "내용을 붙여넣고 자동으로 정리한 뒤 Gmail로 복사",
+    title: "이제 이메일 서식을 일일이 손보지 마세요.",
+    subtitle: "전문가 제목, 주요 경력, Q&A, 날짜를 자동으로 인식해 깔끔한 레이아웃과 색상을 적용합니다.",
+    paste: "붙여넣기", format: "자동 정리", copyStep: "Gmail로 복사",
+    source: "원문 붙여넣기", clear: "지우기", placeholder: "보낼 이메일 내용을 여기에 붙여넣으세요…",
+    tip: "서식이 있는 텍스트 입력란입니다. 원본 시스템에서 바로 붙여넣으면 링크, 표, 기존 테두리를 유지한 채 Gmail로 복사할 수 있습니다.",
+    result: "자동 정리 결과", current: "현재", formatMode: "레이아웃", random: "다른 색상", changed: "변경됨",
+    copied: "복사 완료, Gmail에 붙여넣을 수 있어요", copy: "서식 포함 복사",
+    foot1: "레이아웃과 구성은 유지되며, 랜덤 버튼은 강조 색상, 형광펜, 굵기만 바꿉니다.",
+    foot2: "모든 내용은 현재 브라우저에서만 처리되며 업로드되지 않습니다.",
+    styles: ["자동", "강조 카드", "전문가 목록", "Q&A", "심플"],
+    notes: ["내용에 맞게 구조를 선택하고 전문가별 전체 내용을 테두리로 구분", "전문가별 전체 내용을 강조 카드로 표시", "같은 Angle의 전문가를 간결한 목록으로 정리", "질문과 답변을 색상 카드로 구분", "색상 강조와 바깥 테두리를 뺀 간결한 표시"],
+    palettes: ["TB 클래식", "오션", "포레스트", "플럼", "앰버", "비즈니스 그레이"],
+    emphasisStyles: ["색상 굵게", "형광펜", "색상＋형광펜", "검정 굵게", "색상 밑줄"],
+    options: "간단 설정", introLabel: "소개문", introTreatments: ["없음", "색상", "굵게", "형광펜"], profileFrames: "전문가별 테두리", entityHighlight: "회사／직책 자동 강조",
+    manualEdit: "직접 수정", bold: "굵게／굵게 해제", normal: "기본 굵기", underline: "밑줄", textColor: "글자 색", highlightColor: "배경 색", customColor: "색상 선택", removeHighlight: "배경 색 제거", clearFormatting: "서식 지우기", undo: "실행 취소", redo: "다시 실행", editHint: "텍스트를 선택해 수정",
+    previous: "이전", next: "다음",
+    linksKept: "개 링크 유지",
+    cameoOne: "와, 이거 완전 물건 아이가!",
+    cameoTwo: "이제 손으로 안 해도 되겠네!",
   },
 } as const;
 
@@ -834,7 +863,7 @@ function formatText(
   closeGroup();
   const content = parts.join("");
   return content
-    ? `<div style="font-family:Arial,'Noto Sans JP',sans-serif;font-size:12px;line-height:1.45;color:#171717">${content}</div>`
+    ? `<div style="font-family:Arial,'Noto Sans JP','Noto Sans KR',sans-serif;font-size:12px;line-height:1.45;color:#171717">${content}</div>`
     : "";
 }
 
@@ -896,8 +925,8 @@ export default function Home() {
         window.localStorage.getItem(ENTITY_HIGHLIGHT_STORAGE_KEY) === "true";
       const savedProfileFrames = window.localStorage.getItem(PROFILE_FRAMES_STORAGE_KEY);
       restoreTimer = window.setTimeout(() => {
-        if (savedLanguage === "zh" || savedLanguage === "ja" || savedLanguage === "en") {
-          setLang(savedLanguage);
+        if (savedLanguage && LANGUAGES.includes(savedLanguage as Lang)) {
+          setLang(savedLanguage as Lang);
         }
         if (savedProfileFrames !== null) {
           setProfileFrames(savedProfileFrames !== "false");
@@ -1199,9 +1228,9 @@ export default function Home() {
         <div className="brand"><span className="brandMark" aria-hidden="true" /><span>BBK Bunken</span></div>
         <div className="topActions">
           <div className="languageSwitch" aria-label="Interface language">
-            {(["zh", "ja", "en"] as Lang[]).map((item) => (
+            {LANGUAGES.map((item) => (
               <button key={item} className={lang === item ? "active" : ""} onClick={() => changeLanguage(item)}>
-                {item === "zh" ? "中文" : item === "ja" ? "日本語" : "English"}
+                {LANGUAGE_LABELS[item]}
               </button>
             ))}
           </div>
