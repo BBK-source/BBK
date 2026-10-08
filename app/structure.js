@@ -1,5 +1,11 @@
-const EXPERT_LINE_RE =
-  /^(?:[-•]\s*)?(?:#(?:[A-Z][A-Z0-9]*|\d+)(?:[.-]\d+)*|[A-Z][A-Z0-9]*(?:[.-]\d+)+)\s*[-–]/i;
+const RECOMMENDATION_PREFIX =
+  String.raw`(?:(?:Recommended(?:\s+Expert)?|Recommendation|推荐|推薦|推奨|추천)\s*[:：]?\s*)?`;
+const EXPERT_ID =
+  String.raw`(?:#(?:[A-Z][A-Z0-9]*|\d+)(?:[.-]\d+)*|[A-Z][A-Z0-9]*(?:[.-]\d+)+)`;
+export const EXPERT_LINE_RE = new RegExp(
+  String.raw`^(?:[-•]\s*)?${RECOMMENDATION_PREFIX}${EXPERT_ID}\s*[-–—]`,
+  "i",
+);
 
 // Screening sheets often use a two-level index such as Q1-1, Q 1.2 or
 // Ｑ１－３. Keep the separator set deliberately broad because copied text can
@@ -8,14 +14,16 @@ const INDEX_SEPARATOR = String.raw`[-‐‑‒–—―−－.．_/／]`;
 const LABELED_INDEX = String.raw`[0-9０-９]{1,3}(?:\s*${INDEX_SEPARATOR}\s*[0-9０-９]{1,3})*`;
 const BARE_INDEX = String.raw`[0-9０-９]{1,2}(?:\s*${INDEX_SEPARATOR}\s*[0-9０-９]{1,3})*`;
 const PREFIX_END = String.raw`(?:\s*[.:：．、,，)）]\s*|\s+(?=\S))`;
+const STANDALONE_QUESTION = String.raw`(?:(?:[QＱ]|Question)\s*${LABELED_INDEX}|(?:質問|问题|問題|问|問)\s*${LABELED_INDEX})`;
+const STANDALONE_ANSWER = String.raw`(?:(?:[AＡ]|Answer|回答|答)\s*${LABELED_INDEX})`;
 
 export const QUESTION_PREFIX_RE = new RegExp(
-  String.raw`^(?:(?:[QＱ]|Question)\s*(?:${LABELED_INDEX})?|(?:質問|问题|問題|问|問)\s*${LABELED_INDEX}|${BARE_INDEX})${PREFIX_END}`,
+  String.raw`^(?:${STANDALONE_QUESTION}\s*$|(?:(?:[QＱ]|Question)\s*(?:${LABELED_INDEX})?|(?:質問|问题|問題|问|問)\s*${LABELED_INDEX}|${BARE_INDEX})${PREFIX_END})`,
   "i",
 );
 
 export const ANSWER_PREFIX_RE = new RegExp(
-  String.raw`^(?:(?:[AＡ]|Answer)\s*(?:${LABELED_INDEX})?|回答\s*(?:${LABELED_INDEX})?|答\s*${LABELED_INDEX})${PREFIX_END}`,
+  String.raw`^(?:${STANDALONE_ANSWER}\s*$|(?:(?:[AＡ]|Answer)\s*(?:${LABELED_INDEX})?|回答\s*(?:${LABELED_INDEX})?|答\s*${LABELED_INDEX})${PREFIX_END})`,
   "i",
 );
 
@@ -35,7 +43,7 @@ export function isEmploymentHeading(line) {
 }
 
 export function isAvailabilityHeading(line) {
-  return /^(?:Availability|Available\s+Times?|Interview\s+Availability)\s*[:：]?\s*$|^(?:面談可能時間|対応可能時間|日程候補|可访谈时间|可訪談時間|可用时间|可用時間)\s*[:：]?\s*$/i.test(line.trim());
+  return /^(?:Availability|Available\s+Times?|Interview\s+Availability)(?:\s*[（(][^)）]{1,40}[)）])?\s*[:：]?\s*$|^(?:面談可能時間|対応可能時間|日程候補|可访谈时间|可訪談時間|可用时间|可用時間)(?:\s*[（(][^)）]{1,40}[)）])?\s*[:：]?\s*$/i.test(line.trim());
 }
 
 import {

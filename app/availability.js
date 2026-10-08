@@ -19,8 +19,12 @@ const TIME_RANGE_RE = new RegExp(
   "i",
 );
 
+function withoutListMarker(line) {
+  return line.trim().replace(/^(?:[-*•▪◦‣·]|[■□▪▫])\s*/, "");
+}
+
 export function isAvailabilityLine(line) {
-  const value = line.trim();
+  const value = withoutListMarker(line);
   if (!value || !TIME_RANGE_RE.test(value)) return false;
   return WEEKDAY_START_RE.test(value) || DATE_WITH_WEEKDAY_RE.test(value);
 }
@@ -28,6 +32,12 @@ export function isAvailabilityLine(line) {
 export function isUnavailableAvailabilityLine(line) {
   return /^(?:This\s+(?:specialist|expert)\s+has\s+not\s+yet\s+provided\s+(?:any\s+)?availability|No\s+availability\s+(?:has\s+been\s+)?provided|まだ(?:面談可能時間|対応可能時間|アベイラビリティ).*(?:未提供|ありません|ない)|(?:尚未|暂未|暫未).*(?:提供|确认|確認).*(?:可访谈时间|可訪談時間|可用时间|可用時間|时间|時間))[\s.。]*$/i.test(
     line.trim(),
+  );
+}
+
+export function isTimeZoneLine(line) {
+  return /^(?:Time\s*Zone|Timezone|タイムゾーン|時区|時區|시간대)\s*[:：]/i.test(
+    withoutListMarker(line),
   );
 }
 

@@ -10,6 +10,7 @@ import {
 import {
   ANSWER_PREFIX_RE,
   ARROW_ANSWER_RE,
+  EXPERT_LINE_RE,
   QUESTION_PREFIX_RE,
   isAvailabilityHeading,
   isEmploymentHeading,
@@ -20,8 +21,13 @@ import { applyIntroTreatment } from "./intro-treatment.js";
 import {
   emphasizeAvailabilityTimes,
   isAvailabilityLine,
+  isTimeZoneLine,
   isUnavailableAvailabilityLine,
 } from "./availability.js";
+import {
+  countExpertsWithAvailability,
+  reorderAvailabilityLines,
+} from "./profile-order.js";
 
 type StyleId = "smart" | "classic" | "list" | "qa" | "minimal";
 type Lang = "zh" | "ja" | "en" | "ko";
@@ -33,8 +39,6 @@ type EditorPaletteKind = "text" | "highlight";
 type FormatOptions = {
   introTreatment: IntroTreatmentId;
   entityHighlights: boolean;
-  customCompanies: string[];
-  blockedCompanies: string[];
   expertCards: boolean;
   angleGroups: boolean;
   fullProfileCards: boolean;
@@ -55,10 +59,7 @@ const LANGUAGE_LABELS: Record<Lang, string> = {
 const LANGUAGE_STORAGE_KEY = "bbk-bunken-language";
 const ENTITY_HIGHLIGHT_STORAGE_KEY = "bbk-bunken-entity-highlights";
 const PROFILE_FRAMES_STORAGE_KEY = "bbk-bunken-profile-frames";
-const CUSTOM_COMPANIES_STORAGE_KEY = "bbk-bunken-custom-companies";
-const BLOCKED_COMPANIES_STORAGE_KEY = "bbk-bunken-blocked-companies";
-const EXPERT_LINE_RE = /^(?:[-•]\s*)?(?:#(?:[A-Z][A-Z0-9]*|\d+)(?:[.-]\d+)*|[A-Z][A-Z0-9]*(?:[.-]\d+)+)\s*[-–]/i;
-const EXPERT_ID_RE = /^(?:[-•]\s*)?((?:#(?:[A-Z][A-Z0-9]*|\d+)(?:[.-]\d+)*|[A-Z][A-Z0-9]*(?:[.-]\d+)+))/i;
+const EXPERT_ID_RE = /^(?:[-•]\s*)?(?:(Recommended(?:\s+Expert)?|Recommendation|推荐|推薦|推奨|추천)\s*[:：]?\s*)?((?:#(?:[A-Z][A-Z0-9]*|\d+)(?:[.-]\d+)*|[A-Z][A-Z0-9]*(?:[.-]\d+)+))/i;
 const QUESTION_END_RE = /[?？]\s*$/;
 
 const PALETTES: Record<PaletteId, { accent: string; key: string; soft: string; border: string }> = {
@@ -102,10 +103,9 @@ const UI = {
     emphasisStyles: ["彩色粗体", "荧光笔", "彩色荧光", "黑色重粗", "彩色下划线"],
     options: "简易设置", introLabel: "介绍文", introTreatments: ["无", "标色", "加粗", "荧光"], profileFrames: "专家资料加框", entityHighlight: "自动标记公司／职位",
     manualEdit: "手动调整", bold: "加粗／取消加粗", normal: "恢复常规", underline: "下划线", textColor: "文字颜色", highlightColor: "背景颜色", customColor: "自选颜色", removeHighlight: "去除背景", clearFormatting: "清除格式", undo: "撤销", redo: "重做", editHint: "选中文字后调整",
-    protectEdits: "保护手改", protectedEdits: "手动修改已保护", addCompany: "＋公司", excludeCompany: "非公司", companyDictionary: "个人公司词典", learnedCompanies: "识别为公司", ignoredCompanies: "不识别为公司", emptyDictionary: "还没有记录", removeDictionaryEntry: "删除这条规则", selectCompanyFirst: "请先在右侧选中公司名称", companyLearned: "已记住公司", companyIgnored: "已记住不作为公司",
     previous: "上一个", next: "下一个",
     linksKept: "已保留链接",
-    checkOk: "识别正常", checkEmpty: "粘贴后自动检查结构", angleCount: "Angle", expertCount: "专家", qaCount: "Q&A", linkCount: "链接", missingAnswers: "个问题缺少回答", extraAnswers: "个回答缺少问题", unrecognizedExperts: "位疑似专家未识别", missingBookLinks: "个 Book Now 缺少链接",
+    checkOk: "识别正常", checkEmpty: "粘贴后自动检查结构", angleCount: "Angle", expertCount: "专家", qaCount: "Q&A", linkCount: "链接", availabilityCount: "Availability", missingAnswers: "个问题缺少回答", extraAnswers: "个回答缺少问题", unrecognizedExperts: "位疑似专家未识别", missingBookLinks: "个 Book Now 缺少链接", missingAvailability: "位专家缺少 Availability",
     copyLanguageLink: "复制当前语言链接", languageLinkCopied: "语言链接已复制",
     cameoOne: "哎呀妈呀，这玩意儿老好使了！",
     cameoTwo: "以后可不用手动折腾了！",
@@ -127,10 +127,9 @@ const UI = {
     emphasisStyles: ["カラー太字", "マーカー", "カラー＋マーカー", "黒の太字", "カラー下線"],
     options: "簡単設定", introLabel: "紹介文", introTreatments: ["なし", "カラー", "太字", "マーカー"], profileFrames: "専門家ごとに枠を付ける", entityHighlight: "会社・役職を自動強調",
     manualEdit: "手動調整", bold: "太字／太字を解除", normal: "通常の太さ", underline: "下線", textColor: "文字色", highlightColor: "背景色", customColor: "色を選択", removeHighlight: "背景色を解除", clearFormatting: "書式をクリア", undo: "元に戻す", redo: "やり直す", editHint: "文字を選んで調整",
-    protectEdits: "手動編集を保護", protectedEdits: "手動編集を保護中", addCompany: "＋会社", excludeCompany: "会社ではない", companyDictionary: "個人会社辞書", learnedCompanies: "会社として認識", ignoredCompanies: "会社として認識しない", emptyDictionary: "登録はまだありません", removeDictionaryEntry: "このルールを削除", selectCompanyFirst: "右側で会社名を選択してください", companyLearned: "会社名を記憶しました", companyIgnored: "会社ではないと記憶しました",
     previous: "前へ", next: "次へ",
     linksKept: "リンクを保持",
-    checkOk: "認識は正常です", checkEmpty: "貼り付け後に構成を自動チェック", angleCount: "Angle", expertCount: "専門家", qaCount: "Q&A", linkCount: "リンク", missingAnswers: "件の質問に回答がありません", extraAnswers: "件の回答に質問がありません", unrecognizedExperts: "名の専門家候補を認識できていません", missingBookLinks: "件のBook Nowにリンクがありません",
+    checkOk: "認識は正常です", checkEmpty: "貼り付け後に構成を自動チェック", angleCount: "Angle", expertCount: "専門家", qaCount: "Q&A", linkCount: "リンク", availabilityCount: "Availability", missingAnswers: "件の質問に回答がありません", extraAnswers: "件の回答に質問がありません", unrecognizedExperts: "名の専門家候補を認識できていません", missingBookLinks: "件のBook Nowにリンクがありません", missingAvailability: "名の専門家にAvailabilityがありません",
     copyLanguageLink: "現在の言語リンクをコピー", languageLinkCopied: "言語リンクをコピーしました",
     cameoOne: "これ、めっちゃ便利やん！",
     cameoTwo: "もう手作業で整えんでええな",
@@ -152,10 +151,9 @@ const UI = {
     emphasisStyles: ["Color bold", "Highlighter", "Color + highlight", "Strong black", "Color underline"],
     options: "Simple settings", introLabel: "Introduction", introTreatments: ["None", "Color", "Bold", "Highlight"], profileFrames: "Frame each expert", entityHighlight: "Auto-highlight companies & roles",
     manualEdit: "Edit", bold: "Bold / unbold", normal: "Regular weight", underline: "Underline", textColor: "Text color", highlightColor: "Highlight color", customColor: "Custom color", removeHighlight: "Remove highlight", clearFormatting: "Clear formatting", undo: "Undo", redo: "Redo", editHint: "Select text to edit",
-    protectEdits: "Protect edits", protectedEdits: "Manual edits protected", addCompany: "+ Company", excludeCompany: "Not company", companyDictionary: "Personal company dictionary", learnedCompanies: "Recognize as company", ignoredCompanies: "Do not recognize", emptyDictionary: "No saved rules yet", removeDictionaryEntry: "Remove this rule", selectCompanyFirst: "Select a company name in the result first", companyLearned: "Company saved", companyIgnored: "Saved as not a company",
     previous: "Previous", next: "Next",
     linksKept: "links preserved",
-    checkOk: "Recognition looks good", checkEmpty: "Structure check starts after you paste", angleCount: "Angles", expertCount: "Experts", qaCount: "Q&A", linkCount: "Links", missingAnswers: "questions have no answer", extraAnswers: "answers have no question", unrecognizedExperts: "possible experts were not recognized", missingBookLinks: "Book Now items have no link",
+    checkOk: "Recognition looks good", checkEmpty: "Structure check starts after you paste", angleCount: "Angles", expertCount: "Experts", qaCount: "Q&A", linkCount: "Links", availabilityCount: "Availability", missingAnswers: "questions have no answer", extraAnswers: "answers have no question", unrecognizedExperts: "possible experts were not recognized", missingBookLinks: "Book Now items have no link", missingAvailability: "experts have no availability",
     copyLanguageLink: "Copy current-language link", languageLinkCopied: "Language link copied",
     cameoOne: "Yo, this thing’s fire!",
     cameoTwo: "No more hand-formatting, fam.",
@@ -177,10 +175,9 @@ const UI = {
     emphasisStyles: ["색상 굵게", "형광펜", "색상＋형광펜", "검정 굵게", "색상 밑줄"],
     options: "간단 설정", introLabel: "소개문", introTreatments: ["없음", "색상", "굵게", "형광펜"], profileFrames: "전문가별 테두리", entityHighlight: "회사／직책 자동 강조",
     manualEdit: "직접 수정", bold: "굵게／굵게 해제", normal: "기본 굵기", underline: "밑줄", textColor: "글자 색", highlightColor: "배경 색", customColor: "색상 선택", removeHighlight: "배경 색 제거", clearFormatting: "서식 지우기", undo: "실행 취소", redo: "다시 실행", editHint: "텍스트를 선택해 수정",
-    protectEdits: "수동 수정 보호", protectedEdits: "수동 수정 보호 중", addCompany: "＋회사", excludeCompany: "회사 아님", companyDictionary: "개인 회사 사전", learnedCompanies: "회사로 인식", ignoredCompanies: "회사로 인식하지 않음", emptyDictionary: "저장된 규칙이 없습니다", removeDictionaryEntry: "이 규칙 삭제", selectCompanyFirst: "오른쪽에서 회사명을 먼저 선택하세요", companyLearned: "회사명을 기억했습니다", companyIgnored: "회사가 아닌 것으로 기억했습니다",
     previous: "이전", next: "다음",
     linksKept: "개 링크 유지",
-    checkOk: "인식 결과 정상", checkEmpty: "붙여넣으면 구조를 자동 점검합니다", angleCount: "Angle", expertCount: "전문가", qaCount: "Q&A", linkCount: "링크", missingAnswers: "개 질문에 답변이 없습니다", extraAnswers: "개 답변에 질문이 없습니다", unrecognizedExperts: "명의 전문가 후보를 인식하지 못했습니다", missingBookLinks: "개 Book Now에 링크가 없습니다",
+    checkOk: "인식 결과 정상", checkEmpty: "붙여넣으면 구조를 자동 점검합니다", angleCount: "Angle", expertCount: "전문가", qaCount: "Q&A", linkCount: "링크", availabilityCount: "Availability", missingAnswers: "개 질문에 답변이 없습니다", extraAnswers: "개 답변에 질문이 없습니다", unrecognizedExperts: "명의 전문가 후보를 인식하지 못했습니다", missingBookLinks: "개 Book Now에 링크가 없습니다", missingAvailability: "명의 전문가에게 Availability가 없습니다",
     copyLanguageLink: "현재 언어 링크 복사", languageLinkCopied: "언어 링크 복사 완료",
     cameoOne: "와, 이거 완전 물건 아이가!",
     cameoTwo: "이제 손으로 안 해도 되겠네!",
@@ -207,18 +204,6 @@ function safeLink(value?: string) {
 
 function normalizeLinkLabel(value: string) {
   return value.replace(/\s+/g, " ").trim();
-}
-
-function parseStoredStringList(value: string | null) {
-  if (!value) return [];
-  try {
-    const parsed = JSON.parse(value);
-    return Array.isArray(parsed)
-      ? parsed.filter((item): item is string => typeof item === "string")
-      : [];
-  } catch {
-    return [];
-  }
 }
 
 function renderBookNow(url: string | undefined, palette: PaletteId) {
@@ -390,8 +375,6 @@ function emphasizeCompanies(
   palette: PaletteId,
   enabled = true,
   variant: EmphasisVariantId = "color",
-  customCompanies: string[] = [],
-  blockedCompanies: string[] = [],
 ) {
   if (style === "minimal") return text;
   return emphasizeCompaniesText(
@@ -399,8 +382,6 @@ function emphasizeCompanies(
     PALETTES[palette].key,
     enabled,
     emphasisDecoration(palette, variant),
-    customCompanies,
-    blockedCompanies,
   );
 }
 
@@ -410,8 +391,6 @@ function emphasizeExpertTitleCompanies(
   palette: PaletteId,
   enabled = true,
   variant: EmphasisVariantId = "color",
-  customCompanies: string[] = [],
-  blockedCompanies: string[] = [],
 ) {
   if (style === "minimal") return text;
   return emphasizeCompanyNamesText(
@@ -419,8 +398,6 @@ function emphasizeExpertTitleCompanies(
     PALETTES[palette].key,
     enabled,
     emphasisDecoration(palette, variant),
-    customCompanies,
-    blockedCompanies,
   );
 }
 
@@ -430,8 +407,6 @@ function emphasizeQa(
   palette: PaletteId,
   includeEntities: boolean,
   variant: EmphasisVariantId,
-  customCompanies: string[] = [],
-  blockedCompanies: string[] = [],
 ) {
   if (style === "minimal") return text;
   return emphasizeQaText(
@@ -439,8 +414,6 @@ function emphasizeQa(
     PALETTES[palette].key,
     includeEntities,
     emphasisDecoration(palette, variant),
-    customCompanies,
-    blockedCompanies,
   );
 }
 
@@ -451,11 +424,9 @@ function formatIntroduction(
   entityHighlights: boolean,
   style: StyleId,
   emphasisVariant: EmphasisVariantId,
-  customCompanies: string[],
-  blockedCompanies: string[],
 ) {
   const base = treatment === "none"
-    ? emphasizeCompanies(text, style, palette, entityHighlights, emphasisVariant, customCompanies, blockedCompanies)
+    ? emphasizeCompanies(text, style, palette, entityHighlights, emphasisVariant)
     : text;
   return applyIntroTreatment(base, PALETTES[palette], treatment);
 }
@@ -502,6 +473,8 @@ type StructureCheck = {
   answers: number;
   qaPairs: number;
   links: number;
+  availabilityProfiles: number;
+  missingAvailability: number;
   missingAnswers: number;
   extraAnswers: number;
   unrecognizedExperts: number;
@@ -511,6 +484,7 @@ type StructureCheck = {
 function analyzeSource(text: string, richLinks: RichLink[]): StructureCheck {
   const lines = text.split(/\r?\n/);
   const experts = lines.filter((line) => EXPERT_LINE_RE.test(line.trim())).length;
+  const availabilityCoverage = countExpertsWithAvailability(text);
   const angles = lines.filter((_, index) => isAngleTitleLine(lines, index)).length;
   const questions = lines.filter((line, index) => {
     const trimmed = line.trim();
@@ -535,6 +509,8 @@ function analyzeSource(text: string, richLinks: RichLink[]): StructureCheck {
     answers,
     qaPairs: Math.min(questions, answers),
     links: richLinks.length,
+    availabilityProfiles: availabilityCoverage.withAvailability,
+    missingAvailability: Math.max(0, experts - availabilityCoverage.withAvailability),
     missingAnswers: Math.max(0, questions - answers),
     extraAnswers: Math.max(0, answers - questions),
     unrecognizedExperts: Math.max(0, bookNowItems - experts),
@@ -570,8 +546,10 @@ function formatLine(
   if (!safe.trim()) return `<div style="height:4px;line-height:4px"><br></div>`;
   if (EXPERT_LINE_RE.test(safe)) {
     const idMatch = safe.match(EXPERT_ID_RE);
-    const id = idMatch?.[0] ?? "";
-    const rest = safe.slice(id.length);
+    const fullPrefix = idMatch?.[0] ?? "";
+    const recommendation = idMatch?.[1] ?? "";
+    const id = idMatch?.[2] ?? "";
+    const rest = safe.slice(fullPrefix.length);
     const useCard = options.expertCards && expertCount > 1 && !compactExpert;
     const listCss = compactExpert
       ? style === "classic"
@@ -595,8 +573,11 @@ function formatLine(
       : "";
     const expertRest = style === "minimal"
       ? rest
-      : emphasizeExpertTitleCompanies(rest, style, palette, options.entityHighlights, options.emphasisVariant, options.customCompanies, options.blockedCompanies);
-    return `<div style="${listCss}">${bullet}<span style="color:${accent}">${id.replace(/^[-•]\s*/, "")}</span>${expertRest}</div>`;
+      : emphasizeExpertTitleCompanies(rest, style, palette, options.entityHighlights, options.emphasisVariant);
+    const recommendationHtml = recommendation
+      ? `<span style="color:${keyColor};font-weight:800">${recommendation}</span> `
+      : "";
+    return `<div style="${listCss}">${bullet}${recommendationHtml}<span style="color:${accent}">${id}</span>${expertRest}</div>`;
   }
   if (/^(Customers?|CUSTOMERS?)[-:| ｜]/i.test(safe)) {
     const css = style === "list"
@@ -629,7 +610,7 @@ function formatLine(
       lineLinks,
       palette,
     );
-    const body = emphasizeCompanies(rawBody, style, palette, options.entityHighlights, options.emphasisVariant, options.customCompanies, options.blockedCompanies);
+    const body = emphasizeCompanies(rawBody, style, palette, options.entityHighlights, options.emphasisVariant);
     const bg = style === "qa" ? colors.soft : style === "list" ? "#f6f8f9" : "transparent";
     const margin = qaStart ? (style === "qa" ? "margin-top:7px;" : "margin-top:4px;") : "";
     const padding = style === "qa" ? (qaStart ? "5px 6px" : "1px 6px 4px") : style === "list" ? "3px 5px" : "2px 5px";
@@ -656,7 +637,7 @@ function formatLine(
     const extra = style === "qa"
       ? `border-left:3px solid ${colors.accent};border-right:1px solid ${colors.border};${qaEnd ? `border-bottom:1px solid ${colors.border};` : ""}`
       : "";
-    const answerBody = emphasizeQa(body, style, palette, options.entityHighlights, options.emphasisVariant, options.customCompanies, options.blockedCompanies);
+    const answerBody = emphasizeQa(body, style, palette, options.entityHighlights, options.emphasisVariant);
     return `<div style="color:${keyColor};font-weight:${onlyLabel ? "700" : weight};line-height:1.45;background:${bg};padding:${padding};${extra}">${prefix ? `<b>${prefix}</b>${body ? " " : ""}` : ""}${answerBody}</div>`;
   }
   if (isEmploymentHeading(raw) || isAvailabilityHeading(raw)) {
@@ -667,9 +648,9 @@ function formatLine(
     return `<div style="font-weight:700;line-height:1.42;margin-top:3px">${safe}</div>`;
   }
   if (section === "employment" && /\s+-\s+/.test(safe)) {
-    return `<div style="line-height:1.42;padding:1px 0 3px;border-bottom:1px dotted ${colors.border}">${emphasizeCompanies(safe, style, palette, options.entityHighlights, options.emphasisVariant, options.customCompanies, options.blockedCompanies)}</div>`;
+    return `<div style="line-height:1.42;padding:1px 0 3px;border-bottom:1px dotted ${colors.border}">${emphasizeCompanies(safe, style, palette, options.entityHighlights, options.emphasisVariant)}</div>`;
   }
-  if (section === "availability" && /^Time Zone\s*:/i.test(safe)) {
+  if (section === "availability" && isTimeZoneLine(raw)) {
     return `<div style="font-weight:700;line-height:1.42;padding:4px 0;color:${accent}">${safe}</div>`;
   }
   if (isAvailabilityLine(raw)) {
@@ -689,16 +670,16 @@ function formatLine(
   }
   if (/^[-•]\s*Current/i.test(safe)) {
     const bg = style === "minimal" ? "transparent" : colors.soft;
-    return `<div style="background:${bg};padding:1px 3px;line-height:1.4">${emphasizeCompanies(safe, style, palette, options.entityHighlights, options.emphasisVariant, options.customCompanies, options.blockedCompanies)}</div>`;
+    return `<div style="background:${bg};padding:1px 3px;line-height:1.4">${emphasizeCompanies(safe, style, palette, options.entityHighlights, options.emphasisVariant)}</div>`;
   }
   if (/^\d{1,2}月\d{1,2}日|^\d{1,2}\/\d{1,2}|^\d{4}[/-]\d{1,2}[/-]\d{1,2}/.test(safe)) {
     return `<div style="font-weight:600;line-height:1.42">${safe}</div>`;
   }
   const body = section === "body"
-    ? formatIntroduction(safe, palette, options.introTreatment, options.entityHighlights, style, options.emphasisVariant, options.customCompanies, options.blockedCompanies)
+    ? formatIntroduction(safe, palette, options.introTreatment, options.entityHighlights, style, options.emphasisVariant)
     : style === "minimal"
       ? safe
-      : emphasizeCompanies(safe, style, palette, options.entityHighlights, options.emphasisVariant, options.customCompanies, options.blockedCompanies);
+      : emphasizeCompanies(safe, style, palette, options.entityHighlights, options.emphasisVariant);
   const bodyCss = style === "classic"
     ? "line-height:1.5"
     : style === "list"
@@ -717,7 +698,7 @@ function formatText(
   richLinks: RichLink[],
 ) {
   const style = requestedStyle === "smart" ? detectStyle(text) : requestedStyle;
-  const lines = text.split(/\r?\n/);
+  const lines = reorderAvailabilityLines(text).split(/\r?\n/);
   const expertCount = lines.filter((line) => EXPERT_LINE_RE.test(line.trim())).length;
   let section: ProfileSection = "body";
   let qaFlow: QaRole = null;
@@ -803,6 +784,19 @@ function formatText(
     if (isExpertLine) {
       section = "body";
       qaFlow = null;
+    }
+
+    if (
+      section === "availability"
+      && trimmed
+      && index > 0
+      && !lines[index - 1].trim()
+      && !isAvailabilityHeading(trimmed)
+      && !isAvailabilityLine(trimmed)
+      && !isUnavailableAvailabilityLine(trimmed)
+      && !isTimeZoneLine(trimmed)
+    ) {
+      section = "body";
     }
 
     if (options.angleGroups && isAngleTitle) {
@@ -913,7 +907,7 @@ function formatText(
       section = "availability";
       qaFlow = null;
     }
-    if (isAvailabilityLine(trimmed) || isUnavailableAvailabilityLine(trimmed)) {
+    if (isAvailabilityLine(trimmed) || isUnavailableAvailabilityLine(trimmed) || isTimeZoneLine(trimmed)) {
       section = "availability";
       qaFlow = null;
     }
@@ -959,6 +953,7 @@ function formatText(
       || isAvailabilityHeading(nextNonBlank)
       || isAvailabilityLine(nextNonBlank)
       || isUnavailableAvailabilityLine(nextNonBlank)
+      || isTimeZoneLine(nextNonBlank)
       || EXPERT_LINE_RE.test(nextNonBlank)
       || /^Book Now$/i.test(nextNonBlank);
     const qaEnd = qaRole === "answer" && nextStartsNewSection;
@@ -1006,18 +1001,11 @@ export default function Home() {
   const [introTreatment, setIntroTreatment] = useState<IntroTreatmentId>("none");
   const [profileFrames, setProfileFrames] = useState(true);
   const [entityHighlights, setEntityHighlights] = useState(false);
-  const [customCompanies, setCustomCompanies] = useState<string[]>([]);
-  const [blockedCompanies, setBlockedCompanies] = useState<string[]>([]);
   const [randomLabel, setRandomLabel] = useState("");
   const [activeEditorPalette, setActiveEditorPalette] = useState<EditorPaletteKind | null>(null);
   const [editorTextColor, setEditorTextColor] = useState("#171717");
   const [editorHighlightColor, setEditorHighlightColor] = useState("#fff2bf");
   const [editorHistoryState, setEditorHistoryState] = useState({ canUndo: false, canRedo: false });
-  const [previewHtml, setPreviewHtml] = useState("");
-  const [manualEditsLocked, setManualEditsLocked] = useState(true);
-  const [hasManualEdits, setHasManualEdits] = useState(false);
-  const [companyDictionaryOpen, setCompanyDictionaryOpen] = useState(false);
-  const [dictionaryNotice, setDictionaryNotice] = useState("");
   const sourceInputRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const editorToolbarRef = useRef<HTMLDivElement>(null);
@@ -1026,8 +1014,6 @@ export default function Home() {
   const selectionRestoreFrameRef = useRef<number | null>(null);
   const editorHistoryRef = useRef<{ entries: string[]; index: number }>({ entries: [], index: -1 });
   const previewScrollTopRef = useRef(0);
-  const hasManualEditsRef = useRef(false);
-  const previousSourceRef = useRef("");
   const t = UI[lang];
   const { palette, emphasisVariant } = appearanceHistory[appearanceIndex];
   const effectiveStyle = style === "smart" ? detectStyle(source) : style;
@@ -1042,8 +1028,8 @@ export default function Home() {
   const fullProfileCards = profileFrames && !compactExpertLayout && !plainTextLayout;
   const blackAngleTitles = true;
   const formatOptions = useMemo(
-    () => ({ introTreatment, entityHighlights, customCompanies, blockedCompanies, expertCards, angleGroups, fullProfileCards, blackAngleTitles, emphasisVariant }),
-    [introTreatment, entityHighlights, customCompanies, blockedCompanies, expertCards, angleGroups, fullProfileCards, blackAngleTitles, emphasisVariant],
+    () => ({ introTreatment, entityHighlights, expertCards, angleGroups, fullProfileCards, blackAngleTitles, emphasisVariant }),
+    [introTreatment, entityHighlights, expertCards, angleGroups, fullProfileCards, blackAngleTitles, emphasisVariant],
   );
   const html = useMemo(
     () => formatText(source, style, palette, formatOptions, richLinks),
@@ -1057,6 +1043,7 @@ export default function Home() {
     structureCheck.extraAnswers > 0 ? `${structureCheck.extraAnswers} ${t.extraAnswers}` : "",
     structureCheck.unrecognizedExperts > 0 ? `${structureCheck.unrecognizedExperts} ${t.unrecognizedExperts}` : "",
     structureCheck.missingBookLinks > 0 ? `${structureCheck.missingBookLinks} ${t.missingBookLinks}` : "",
+    structureCheck.missingAvailability > 0 ? `${structureCheck.missingAvailability} ${t.missingAvailability}` : "",
   ].filter(Boolean);
 
   useEffect(() => {
@@ -1064,8 +1051,6 @@ export default function Home() {
     let savedLanguage: string | null = null;
     let savedEntityHighlights = false;
     let savedProfileFrames: string | null = null;
-    let savedCustomCompanies: string[] = [];
-    let savedBlockedCompanies: string[] = [];
     try {
       requestedLanguage = new URL(window.location.href).searchParams.get("lang");
     } catch {
@@ -1075,12 +1060,6 @@ export default function Home() {
       savedLanguage = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
       savedEntityHighlights = window.localStorage.getItem(ENTITY_HIGHLIGHT_STORAGE_KEY) === "true";
       savedProfileFrames = window.localStorage.getItem(PROFILE_FRAMES_STORAGE_KEY);
-      savedCustomCompanies = parseStoredStringList(
-        window.localStorage.getItem(CUSTOM_COMPANIES_STORAGE_KEY),
-      );
-      savedBlockedCompanies = parseStoredStringList(
-        window.localStorage.getItem(BLOCKED_COMPANIES_STORAGE_KEY),
-      );
     } catch {
       // Saved preferences are optional.
     }
@@ -1095,8 +1074,6 @@ export default function Home() {
         setProfileFrames(savedProfileFrames !== "false");
       }
       setEntityHighlights(savedEntityHighlights);
-      setCustomCompanies(savedCustomCompanies);
-      setBlockedCompanies(savedBlockedCompanies);
     }, 0);
     return () => {
       window.clearTimeout(restoreTimer);
@@ -1108,17 +1085,6 @@ export default function Home() {
   }, [lang]);
 
   useLayoutEffect(() => {
-    const sourceChanged = previousSourceRef.current !== source;
-    previousSourceRef.current = source;
-    if (!sourceChanged && manualEditsLocked && hasManualEditsRef.current) return;
-    setPreviewHtml(html);
-    if (sourceChanged) {
-      hasManualEditsRef.current = false;
-      setHasManualEdits(false);
-    }
-  }, [html, source, manualEditsLocked]);
-
-  useLayoutEffect(() => {
     const preview = previewRef.current;
     if (!preview) return;
     const maximum = Math.max(0, preview.scrollHeight - preview.clientHeight);
@@ -1128,19 +1094,18 @@ export default function Home() {
     setEditorHistoryState((current) => (
       current.canUndo || current.canRedo ? { canUndo: false, canRedo: false } : current
     ));
-  }, [previewHtml]);
+  }, [html]);
 
   useEffect(() => {
-    if (!activeEditorPalette && !companyDictionaryOpen) return;
+    if (!activeEditorPalette) return;
     function closeEditorPalette(event: PointerEvent) {
       if (!editorToolbarRef.current?.contains(event.target as Node)) {
         setActiveEditorPalette(null);
-        setCompanyDictionaryOpen(false);
       }
     }
     document.addEventListener("pointerdown", closeEditorPalette);
     return () => document.removeEventListener("pointerdown", closeEditorPalette);
-  }, [activeEditorPalette, companyDictionaryOpen]);
+  }, [activeEditorPalette]);
 
   useEffect(() => {
     function trackPreviewSelection() {
@@ -1219,101 +1184,6 @@ export default function Home() {
     }
   }
 
-  function markManualEdit() {
-    hasManualEditsRef.current = true;
-    setHasManualEdits(true);
-  }
-
-  function saveCompanyList(key: string, values: string[]) {
-    try {
-      window.localStorage.setItem(key, JSON.stringify(values));
-    } catch {
-      // Personal rules still work for the current visit.
-    }
-  }
-
-  function selectedPreviewText() {
-    const range = previewSelectionRef.current;
-    if (!range || range.collapsed) return "";
-    const value = range.toString().replace(/\s+/g, " ").trim();
-    return value.length <= 80 ? value : "";
-  }
-
-  function teachSelectedCompany(mode: "include" | "exclude") {
-    const value = selectedPreviewText();
-    if (!value || !restorePreviewSelection()) {
-      setDictionaryNotice(t.selectCompanyFirst);
-      window.setTimeout(() => setDictionaryNotice(""), 1800);
-      return;
-    }
-
-    const sameTerm = (item: string) => item.localeCompare(value, undefined, { sensitivity: "accent" }) === 0;
-    if (mode === "include") {
-      setCustomCompanies((current) => {
-        const next = current.some(sameTerm) ? current : [...current, value];
-        saveCompanyList(CUSTOM_COMPANIES_STORAGE_KEY, next);
-        return next;
-      });
-      setBlockedCompanies((current) => {
-        const next = current.filter((item) => !sameTerm(item));
-        saveCompanyList(BLOCKED_COMPANIES_STORAGE_KEY, next);
-        return next;
-      });
-    } else {
-      setBlockedCompanies((current) => {
-        const next = current.some(sameTerm) ? current : [...current, value];
-        saveCompanyList(BLOCKED_COMPANIES_STORAGE_KEY, next);
-        return next;
-      });
-      setCustomCompanies((current) => {
-        const next = current.filter((item) => !sameTerm(item));
-        saveCompanyList(CUSTOM_COMPANIES_STORAGE_KEY, next);
-        return next;
-      });
-    }
-
-    document.execCommand("styleWithCSS", false, "true");
-    if (mode === "include") {
-      const decoration = emphasisDecoration(palette, emphasisVariant);
-      document.execCommand("foreColor", false, decoration.color);
-      if (!document.queryCommandState("bold")) document.execCommand("bold", false);
-      if (decoration.background) {
-        if (!document.execCommand("hiliteColor", false, decoration.background)) {
-          document.execCommand("backColor", false, decoration.background);
-        }
-      }
-      if (decoration.underline && !document.queryCommandState("underline")) {
-        document.execCommand("underline", false);
-      }
-    } else {
-      document.execCommand("removeFormat", false);
-    }
-
-    if (!entityHighlights) changeEntityHighlights(true);
-    markManualEdit();
-    rememberPreviewSelection();
-    recordPreviewHistory();
-    setDictionaryNotice(`${mode === "include" ? t.companyLearned : t.companyIgnored}：${value}`);
-    window.setTimeout(() => setDictionaryNotice(""), 1800);
-    releasePreviewSelection();
-  }
-
-  function removeCompanyRule(mode: "include" | "exclude", value: string) {
-    if (mode === "include") {
-      setCustomCompanies((current) => {
-        const next = current.filter((item) => item !== value);
-        saveCompanyList(CUSTOM_COMPANIES_STORAGE_KEY, next);
-        return next;
-      });
-    } else {
-      setBlockedCompanies((current) => {
-        const next = current.filter((item) => item !== value);
-        saveCompanyList(BLOCKED_COMPANIES_STORAGE_KEY, next);
-        return next;
-      });
-    }
-  }
-
   function applyStylePreset(nextStyle: StyleId) {
     setStyle(nextStyle);
   }
@@ -1381,9 +1251,6 @@ export default function Home() {
     setSource("");
     setRichLinks([]);
     setActiveEditorPalette(null);
-    setCompanyDictionaryOpen(false);
-    hasManualEditsRef.current = false;
-    setHasManualEdits(false);
   }
 
   function rememberPreviewSelection() {
@@ -1465,7 +1332,6 @@ export default function Home() {
 
     if (kind === "text" && value) setEditorTextColor(value);
     if (kind === "highlight" && value && value !== "transparent") setEditorHighlightColor(value);
-    markManualEdit();
     rememberPreviewSelection();
     recordPreviewHistory();
     releasePreviewSelection();
@@ -1481,7 +1347,6 @@ export default function Home() {
     preview.scrollTop = scrollTop;
     previewSelectionRef.current = null;
     editorHistoryRef.current = { ...history, index: nextIndex };
-    markManualEdit();
     setEditorHistoryState({
       canUndo: nextIndex > 0,
       canRedo: nextIndex < history.entries.length - 1,
@@ -1553,16 +1418,8 @@ export default function Home() {
           <span className="sponsorWallLabel">UNOFFICIAL AFTER-WORK SPONSORS</span>
         </div>
         <div className="heroCopy">
-          <p className="eyebrow">EMAIL FORMAT ASSISTANT</p>
           <h1>{t.title}</h1>
           <p className="subtitle">{t.subtitle}</p>
-        </div>
-        <div className="heroAside">
-          <div className="steps">
-            <span><b>1</b> {t.paste}</span><i />
-            <span><b>2</b> {t.format}</span><i />
-            <span><b>3</b> {t.copyStep}</span>
-          </div>
         </div>
       </section>
 
@@ -1588,6 +1445,7 @@ export default function Home() {
                   <span className="diagnosticChip">{t.expertCount} <b>{structureCheck.experts}</b></span>
                   <span className="diagnosticChip">{t.qaCount} <b>{structureCheck.qaPairs}</b></span>
                   <span className="diagnosticChip">{t.linkCount} <b>{structureCheck.links}</b></span>
+                  <span className="diagnosticChip">{t.availabilityCount} <b>{structureCheck.availabilityProfiles}/{structureCheck.experts}</b></span>
                   <span
                     className={`diagnosticState${structureIssues.length ? " warning" : " ok"}`}
                     title={structureIssues.join(" · ")}
@@ -1732,7 +1590,6 @@ export default function Home() {
               title={t.textColor}
               aria-label={t.textColor}
               onClick={() => {
-                setCompanyDictionaryOpen(false);
                 setActiveEditorPalette((current) => current === "text" ? null : "text");
               }}
             >
@@ -1745,7 +1602,6 @@ export default function Home() {
               title={t.highlightColor}
               aria-label={t.highlightColor}
               onClick={() => {
-                setCompanyDictionaryOpen(false);
                 setActiveEditorPalette((current) => current === "highlight" ? null : "highlight");
               }}
             >
@@ -1758,29 +1614,6 @@ export default function Home() {
               aria-label={t.clearFormatting}
               onClick={() => applyPreviewFormatting("removeFormat")}
             >T×</button>
-            <span className="editorDivider" aria-hidden="true" />
-            <button
-              className="companyRuleButton include"
-              disabled={!source}
-              title={t.addCompany}
-              onClick={() => teachSelectedCompany("include")}
-            >{t.addCompany}</button>
-            <button
-              className="companyRuleButton exclude"
-              disabled={!source}
-              title={t.excludeCompany}
-              onClick={() => teachSelectedCompany("exclude")}
-            >{t.excludeCompany}</button>
-            <button
-              className={`dictionaryButton${companyDictionaryOpen ? " active" : ""}`}
-              disabled={!source && customCompanies.length + blockedCompanies.length === 0}
-              title={t.companyDictionary}
-              aria-label={t.companyDictionary}
-              onClick={() => {
-                setActiveEditorPalette(null);
-                setCompanyDictionaryOpen((current) => !current);
-              }}
-            >▤ {customCompanies.length + blockedCompanies.length}</button>
             <span className="editorDivider" aria-hidden="true" />
             <button
               className="editorTool editorHistoryButton"
@@ -1796,15 +1629,7 @@ export default function Home() {
               aria-label={t.redo}
               onClick={() => stepPreviewHistory(1)}
             >↷</button>
-            <button
-              className={`editLockButton${manualEditsLocked ? " active" : ""}`}
-              title={t.protectEdits}
-              aria-pressed={manualEditsLocked}
-              onClick={() => setManualEditsLocked((current) => !current)}
-            >{manualEditsLocked ? "🔒" : "🔓"} {t.protectEdits}</button>
-            <span className={`editorHint${dictionaryNotice ? " notice" : ""}`}>
-              {dictionaryNotice || (hasManualEdits && manualEditsLocked ? t.protectedEdits : t.editHint)}
-            </span>
+            <span className="editorHint">{t.editHint}</span>
 
             {activeEditorPalette && (
               <div className="editorPalette" role="dialog" aria-label={t.textColor}>
@@ -1866,38 +1691,6 @@ export default function Home() {
                 </div>
               </div>
             )}
-            {companyDictionaryOpen && (
-              <div className="companyDictionaryPanel" role="dialog" aria-label={t.companyDictionary}>
-                <div className="dictionaryHeading">
-                  <b>{t.companyDictionary}</b>
-                  <span>{customCompanies.length + blockedCompanies.length}</span>
-                </div>
-                <div className="dictionarySection">
-                  <span>{t.learnedCompanies}</span>
-                  <div className="dictionaryEntries">
-                    {customCompanies.length === 0 && <i>{t.emptyDictionary}</i>}
-                    {customCompanies.map((company) => (
-                      <span className="dictionaryEntry learned" key={`include-${company}`}>
-                        {company}
-                        <button title={t.removeDictionaryEntry} aria-label={`${t.removeDictionaryEntry}: ${company}`} onClick={() => removeCompanyRule("include", company)}>×</button>
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                <div className="dictionarySection">
-                  <span>{t.ignoredCompanies}</span>
-                  <div className="dictionaryEntries">
-                    {blockedCompanies.length === 0 && <i>{t.emptyDictionary}</i>}
-                    {blockedCompanies.map((company) => (
-                      <span className="dictionaryEntry ignored" key={`exclude-${company}`}>
-                        {company}
-                        <button title={t.removeDictionaryEntry} aria-label={`${t.removeDictionaryEntry}: ${company}`} onClick={() => removeCompanyRule("exclude", company)}>×</button>
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
           <div
             ref={previewRef}
@@ -1910,7 +1703,6 @@ export default function Home() {
             onMouseUp={rememberPreviewSelection}
             onKeyUp={rememberPreviewSelection}
             onInput={() => {
-              markManualEdit();
               rememberPreviewSelection();
               recordPreviewHistory();
             }}
@@ -1928,7 +1720,7 @@ export default function Home() {
             onScroll={(event) => {
               previewScrollTopRef.current = event.currentTarget.scrollTop;
             }}
-            dangerouslySetInnerHTML={{ __html: previewHtml }}
+            dangerouslySetInnerHTML={{ __html: html }}
           />
         </div>
       </section>

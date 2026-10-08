@@ -39,27 +39,3 @@ test("keeps existing link markup intact while highlighting company names", () =>
   const html = emphasizeCompanyNamesText('<a href="https://example.com/expert">TSMC</a>', "#e83b2e");
   assert.match(html, /<a href="https:\/\/example\.com\/expert"><span[^>]*>TSMC<\/span><\/a>/);
 });
-
-test("learns a personal company name", () => {
-  const html = emphasizeCompanyNamesText(
-    "Former Director at North Star Labs",
-    "#e83b2e",
-    true,
-    {},
-    ["North Star Labs"],
-  );
-  assert.match(html, /<span[^>]*>North Star Labs<\/span>/);
-});
-
-test("keeps a blocked false positive unformatted", () => {
-  const html = emphasizeCompanyNamesText(
-    "Former Director at TSMC",
-    "#e83b2e",
-    true,
-    {},
-    [],
-    ["TSMC"],
-  );
-  assert.doesNotMatch(html, /<span[^>]*>TSMC<\/span>/);
-  assert.match(html, /at TSMC/);
-});

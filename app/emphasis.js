@@ -70,28 +70,6 @@ function restoreTokens(text, values, open, close) {
   return text.replace(pattern, (_, index) => values[Number(index)] ?? "");
 }
 
-function normalizeCompanyValue(value) {
-  return value
-    .replace(/&amp;/gi, "&")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLocaleLowerCase();
-}
-
-function customCompanyPattern(companies) {
-  const values = companies
-    .map((value) => value.trim())
-    .filter(Boolean)
-    .map((value) => value
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;"))
-    .sort((left, right) => right.length - left.length)
-    .map(escapeRegExp);
-  if (values.length === 0) return null;
-  return new RegExp(`(?<![A-Za-z0-9])(?:${values.join("|")})(?![A-Za-z0-9])`, "giu");
-}
-
 function applyEmphasis(
   html,
   color,
@@ -99,19 +77,15 @@ function applyEmphasis(
   includeEntities = true,
   decoration = {},
   includeRoles = true,
-  customCompanies = [],
-  blockedCompanies = [],
 ) {
   const htmlTags = [];
   const marks = [];
-  const blockedCompanySet = new Set(blockedCompanies.map(normalizeCompanyValue).filter(Boolean));
   let output = html.replace(/<[^>]+>/g, (tag) => {
     const index = htmlTags.push(tag) - 1;
     return token(index, HTML_TOKEN_OPEN, HTML_TOKEN_CLOSE);
   });
 
   const mark = (value, weight = 700) => {
-    const blocked = blockedCompanySet.has(normalizeCompanyValue(value));
     const resolvedColor = decoration.color ?? color;
     const resolvedWeight = decoration.weight ?? weight;
     const background = decoration.background
@@ -120,9 +94,7 @@ function applyEmphasis(
     const underline = decoration.underline
       ? `;text-decoration:underline;text-decoration-color:${resolvedColor};text-underline-offset:2px`
       : "";
-    const index = marks.push(blocked
-      ? value
-      : `<span style="color:${resolvedColor};font-weight:${resolvedWeight}${background}${underline}">${value}</span>`) - 1;
+    const index = marks.push(`<span style="color:${resolvedColor};font-weight:${resolvedWeight}${background}${underline}">${value}</span>`) - 1;
     return token(index, MARK_TOKEN_OPEN, MARK_TOKEN_CLOSE);
   };
 
@@ -131,11 +103,6 @@ function applyEmphasis(
   };
 
   if (includeEntities) {
-    // Personal corrections run first. Tokens protect both learned companies and
-    // explicit false positives from being reprocessed by the broader rules.
-    const personalCompanyRe = customCompanyPattern(customCompanies);
-    if (personalCompanyRe) markMatch(personalCompanyRe);
-
     // English and European legal names, including Co., Ltd., GmbH, AG and Pte Ltd.
     markMatch(
       /\b[A-Z][A-Za-z0-9&'’.\-]*(?:\s+(?:&|of|[A-Z][A-Za-z0-9&'’.\-]*)){0,6}(?:,\s*|\s+)(?:Co\.,?\s*(?:Ltd\.?|Limited)|Co\.?\s+Ltd\.?|Incorporated|Inc\.?|Corporation|Corp\.?|L\.L\.C\.?|LLC|P\.L\.C\.?|PLC|Limited|Ltd\.?|GmbH(?:\s*&\s*Co\.?\s*KG)?|AG|SE|KG|B\.V\.?|BV|N\.V\.?|NV|S\.A\.S\.?|SAS|S\.p\.A\.?|S\.A\.?|Pte\.?\s*Ltd\.?|K\.K\.?|Holdings?|Group|Technolog(?:y|ies)|Systems?|Motors?|Bank|Airlines?|Industries|Solutions|Partners|Semiconductors?|Electronics|Electric|Energy|Materials|Pharmaceuticals|Robotics|Capital|Ventures|Consulting)\b/g,
@@ -243,22 +210,22 @@ function applyEmphasis(
   return restoreTokens(output, htmlTags, HTML_TOKEN_OPEN, HTML_TOKEN_CLOSE);
 }
 
-export function emphasizeCompaniesText(html, color, enabled = true, decoration = {}, customCompanies = [], blockedCompanies = []) {
+export function emphasizeCompaniesText(html, color, enabled = true, decoration = {}) {
   return enabled
-    ? applyEmphasis(html, color, "companies", true, decoration, true, customCompanies, blockedCompanies)
+    ? applyEmphasis(html, color, "companies", true, decoration, true)
     : html;
 }
 
-export function emphasizeCompanyNamesText(html, color, enabled = true, decoration = {}, customCompanies = [], blockedCompanies = []) {
+export function emphasizeCompanyNamesText(html, color, enabled = true, decoration = {}) {
   return enabled
-    ? applyEmphasis(html, color, "companies", true, decoration, false, customCompanies, blockedCompanies)
+    ? applyEmphasis(html, color, "companies", true, decoration, false)
     : html;
 }
 
-export function emphasizeIntroText(html, color, includeEntities = true, decoration = {}, customCompanies = [], blockedCompanies = []) {
-  return applyEmphasis(html, color, "intro", includeEntities, decoration, true, customCompanies, blockedCompanies);
+export function emphasizeIntroText(html, color, includeEntities = true, decoration = {}) {
+  return applyEmphasis(html, color, "intro", includeEntities, decoration, true);
 }
 
-export function emphasizeQaText(html, color, includeEntities = true, decoration = {}, customCompanies = [], blockedCompanies = []) {
-  return applyEmphasis(html, color, "qa", includeEntities, decoration, true, customCompanies, blockedCompanies);
+export function emphasizeQaText(html, color, includeEntities = true, decoration = {}) {
+  return applyEmphasis(html, color, "qa", includeEntities, decoration, true);
 }
