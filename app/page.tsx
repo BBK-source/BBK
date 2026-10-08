@@ -700,7 +700,7 @@ function formatText(
 ) {
   const style = requestedStyle === "smart" ? detectStyle(text) : requestedStyle;
   const sourceLines = text.split(/\r?\n/);
-  const lines = reorderAvailabilityLines(text).split(/\r?\n/);
+  const lines: string[] = reorderAvailabilityLines(text).split(/\r?\n/);
   const expertCount = sourceLines.filter((line) => EXPERT_LINE_RE.test(line.trim())).length;
   let section: ProfileSection = "body";
   let qaFlow: QaRole = null;
