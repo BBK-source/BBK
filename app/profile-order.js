@@ -41,6 +41,14 @@ function collapseBlankLines(lines) {
   ));
 }
 
+export const AVAILABILITY_SUMMARY_END = "[[BBK_AVAILABILITY_SUMMARY_END]]";
+
+function isProjectLinksStartLine(line) {
+  return /^(?:To\s+manage\s+this\s+project\b|Scheduler\s+Link\s*[:：]|Project\s+page\s*[:：]|Excel\s+download\s*[:：]|View\s+project\s+(?:online|in\s+Excel)\b)/i.test(
+    line.trim(),
+  );
+}
+
 function availabilityIndexes(block) {
   const directContent = block
     .map((line, index) => (isAvailabilityContent(line) ? index : -1))
@@ -88,6 +96,24 @@ function reorderExpertBlock(block) {
   return output;
 }
 
+function extractAvailabilityFromExpertBlock(block) {
+  if (block.length < 2) return { summary: [], profile: block };
+  const title = block[0];
+  const tail = block.slice(1);
+  const indexes = availabilityIndexes(tail);
+  if (!indexes.size) return { summary: [], profile: block };
+
+  const availability = collapseBlankLines(trimBlankEdges(
+    tail.filter((_, index) => indexes.has(index)),
+  ));
+  const profileTail = trimBlankEdges(tail.filter((_, index) => !indexes.has(index)));
+
+  return {
+    summary: [title, ...availability],
+    profile: profileTail.length ? [title, ...profileTail] : [title],
+  };
+}
+
 function expertBlockEnd(lines, start) {
   for (let index = start + 1; index < lines.length; index += 1) {
     if (isExpertLine(lines[index]) || isAngleTitleLine(lines, index)) return index;
@@ -97,6 +123,49 @@ function expertBlockEnd(lines, start) {
 
 export function reorderAvailabilityLines(text) {
   const lines = text.split(/\r?\n/);
+  const projectLinksIndex = lines.findIndex(isProjectLinksStartLine);
+
+  // If the copied email already contains a title + availability block above
+  // its project links, leave that authored summary in place.
+  const alreadyHasSummary = projectLinksIndex > 0 && lines
+    .slice(0, projectLinksIndex)
+    .some(isExpertLine);
+
+  if (alreadyHasSummary) return text;
+
+  if (projectLinksIndex >= 0) {
+    const summaries = [];
+    const profiles = [];
+    let index = 0;
+
+    while (index < lines.length) {
+      if (!isExpertLine(lines[index])) {
+        profiles.push(lines[index]);
+        index += 1;
+        continue;
+      }
+      const end = expertBlockEnd(lines, index);
+      const extracted = extractAvailabilityFromExpertBlock(lines.slice(index, end));
+      if (extracted.summary.length) {
+        if (summaries.length) summaries.push("");
+        summaries.push(...extracted.summary);
+      }
+      profiles.push(...extracted.profile);
+      index = end;
+    }
+
+    if (summaries.length) {
+      const insertionIndex = profiles.findIndex(isProjectLinksStartLine);
+      return [
+        ...profiles.slice(0, insertionIndex),
+        ...summaries,
+        AVAILABILITY_SUMMARY_END,
+        "",
+        ...profiles.slice(insertionIndex),
+      ].join("\n");
+    }
+  }
+
   const output = [];
   let index = 0;
 

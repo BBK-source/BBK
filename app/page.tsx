@@ -25,6 +25,7 @@ import {
   isUnavailableAvailabilityLine,
 } from "./availability.js";
 import {
+  AVAILABILITY_SUMMARY_END,
   countExpertsWithAvailability,
   reorderAvailabilityLines,
 } from "./profile-order.js";
@@ -698,8 +699,9 @@ function formatText(
   richLinks: RichLink[],
 ) {
   const style = requestedStyle === "smart" ? detectStyle(text) : requestedStyle;
+  const sourceLines = text.split(/\r?\n/);
   const lines = reorderAvailabilityLines(text).split(/\r?\n/);
-  const expertCount = lines.filter((line) => EXPERT_LINE_RE.test(line.trim())).length;
+  const expertCount = sourceLines.filter((line) => EXPERT_LINE_RE.test(line.trim())).length;
   let section: ProfileSection = "body";
   let qaFlow: QaRole = null;
   let groupOpen = false;
@@ -773,6 +775,14 @@ function formatText(
     const nextNonBlank = nextNonBlankIndex >= 0 ? lines[nextNonBlankIndex].trim() : "";
     const isAngleTitle = isAngleTitleLine(lines, index);
     const isExpertLine = EXPERT_LINE_RE.test(trimmed);
+
+    if (trimmed === AVAILABILITY_SUMMARY_END) {
+      closeGroup();
+      section = "body";
+      qaFlow = null;
+      previousLineWasBlank = false;
+      continue;
+    }
 
     if (!trimmed) {
       if (previousLineWasBlank) continue;

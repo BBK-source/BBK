@@ -7,7 +7,7 @@ import {
   reorderAvailabilityLines,
 } from "../app/profile-order.js";
 
-test("moves bottom availability directly below a recommended expert title", () => {
+test("places a title and availability summary above the project links", () => {
   const source = [
     "Scheduler Link: Book Now",
     "Project page: access these profiles online",
@@ -26,20 +26,22 @@ test("moves bottom availability directly below a recommended expert title", () =
   ].join("\n");
 
   const reordered = reorderAvailabilityLines(source).split("\n");
-  const titleIndex = reordered.indexOf("Recommended #1.2 - Deepak Khandelwal - Former COO at DBS Bank");
+  const title = "Recommended #1.2 - Deepak Khandelwal - Former COO at DBS Bank";
+  const summaryTitleIndex = reordered.indexOf(title);
+  const projectLinksIndex = reordered.indexOf("Scheduler Link: Book Now");
+  const profileTitleIndex = reordered.lastIndexOf(title);
 
-  assert.deepEqual(reordered.slice(0, 3), [
-    "Scheduler Link: Book Now",
-    "Project page: access these profiles online",
-    "Excel download: view project in Excel",
-  ]);
-  assert.equal(reordered[titleIndex + 1], "Book Now");
-  assert.equal(reordered[titleIndex + 2], "Availability (SGT):");
-  assert.equal(reordered[titleIndex + 3], "• Thursday 08 October 3:00 PM - 6:30 PM");
-  assert.ok(reordered.indexOf("This expert is a strong fit for the project.") > titleIndex + 3);
+  assert.ok(summaryTitleIndex < projectLinksIndex);
+  assert.equal(reordered[summaryTitleIndex + 1], "Availability (SGT):");
+  assert.equal(reordered[summaryTitleIndex + 2], "• Thursday 08 October 3:00 PM - 6:30 PM");
+  assert.ok(profileTitleIndex > projectLinksIndex);
+  assert.equal(reordered[profileTitleIndex + 1], "Book Now");
+  assert.ok(reordered.indexOf("This expert is a strong fit for the project.") > profileTitleIndex);
+  assert.equal(reordered.filter((line) => line === "Availability (SGT):").length, 1);
+  assert.equal(reordered.filter((line) => line.includes("Thursday 08 October")).length, 1);
 });
 
-test("keeps each expert's availability with the correct expert", () => {
+test("keeps each expert's availability with the correct expert without project links", () => {
   const source = [
     "#1.1 - First Expert",
     "First RE",
@@ -57,6 +59,51 @@ test("keeps each expert's availability with the correct expert", () => {
   const second = reordered.indexOf("#1.2 - Second Expert");
   assert.equal(reordered[second + 1], "No availability has been provided.");
   assert.deepEqual(countExpertsWithAvailability(source), { experts: 2, withAvailability: 2 });
+});
+
+test("builds multiple expert summaries before project links", () => {
+  const source = [
+    "Introductory email text",
+    "To manage this project, select profiles or schedule calls, please use the following links:",
+    "View project online",
+    "View project in Excel",
+    "",
+    "#1.1 - First Expert",
+    "First RE",
+    "Monday 12 October 9:00 AM - 10:00 AM",
+    "#1.2 - Second Expert",
+    "Second RE",
+    "Tuesday 13 October 10:00 AM - 11:00 AM",
+  ].join("\n");
+
+  const reordered = reorderAvailabilityLines(source).split("\n");
+  const linksIndex = reordered.indexOf("To manage this project, select profiles or schedule calls, please use the following links:");
+  assert.deepEqual(reordered.slice(0, 6), [
+    "Introductory email text",
+    "#1.1 - First Expert",
+    "Monday 12 October 9:00 AM - 10:00 AM",
+    "",
+    "#1.2 - Second Expert",
+    "Tuesday 13 October 10:00 AM - 11:00 AM",
+  ]);
+  assert.ok(linksIndex > 5);
+  assert.equal(reordered.filter((line) => line.includes("Monday 12 October")).length, 1);
+  assert.equal(reordered.filter((line) => line.includes("Tuesday 13 October")).length, 1);
+  assert.ok(reordered.lastIndexOf("#1.2 - Second Expert") > linksIndex);
+});
+
+test("does not duplicate a summary that is already above the project links", () => {
+  const source = [
+    "#1.1 - First Expert",
+    "Monday 12 October 9:00 AM - 10:00 AM",
+    "To manage this project, select profiles or schedule calls, please use the following links:",
+    "View project online",
+    "#1.1 - First Expert",
+    "First RE",
+  ].join("\n");
+
+  const reordered = reorderAvailabilityLines(source);
+  assert.equal(reordered, source);
 });
 
 test("reports expert profiles that have no availability", () => {
