@@ -566,6 +566,57 @@ h1 {
   color: var(--ink);
   background: #e5e5ea;
 }
+.projectLeadBar {
+  min-height: 58px;
+  padding: 9px 15px;
+  border-bottom: 1px solid var(--line);
+  background: #fff;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.projectLeadLabel {
+  min-width: 112px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+.projectLeadLabel small {
+  color: #86868b;
+  font-size: 9px;
+  font-weight: 500;
+}
+.projectLeadSegments {
+  width: min(470px, 100%);
+  padding: 3px;
+  border-radius: 12px;
+  background: #f2f2f7;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 2px;
+}
+.projectLeadSegments button {
+  min-width: 0;
+  height: 31px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #6e6e73;
+  font-size: 10px;
+  white-space: nowrap;
+}
+.projectLeadSegments button:hover { color: var(--ink); background: rgba(255,255,255,.58); }
+.projectLeadSegments button.active {
+  background: #fff;
+  color: var(--blue-dark);
+  font-weight: 650;
+  box-shadow: 0 1px 5px rgba(0,0,0,.12);
+}
 .optionBar {
   min-height: 50px;
   padding: 8px 15px;
@@ -681,6 +732,9 @@ footer {
 
 @media (max-width: 680px) {
   .sponsorWall { display: none; }
+  .projectLeadBar { align-items: flex-start; flex-direction: column; gap: 7px; }
+  .projectLeadLabel { min-width: 0; }
+  .projectLeadSegments { width: 100%; }
 }
 
 @media (max-width: 420px) {

@@ -1,4 +1,5 @@
 import {
+  classifyProfileSections,
   isAvailabilityHeading,
   isExpertLine,
 } from "./structure.js";
@@ -96,20 +97,43 @@ function reorderExpertBlock(block) {
   return output;
 }
 
-function extractAvailabilityFromExpertBlock(block) {
+function movableSectionIndexes(block, section) {
+  if (section === "availability") return availabilityIndexes(block);
+  if (section !== "intro" && section !== "qa") return new Set();
+
+  const classifications = classifyProfileSections(block.join("\n"));
+  const directContent = block
+    .map((line, index) => {
+      if (!line.trim() || /^Book\s*Now$/i.test(line.trim())) return -1;
+      return classifications[index] === section ? index : -1;
+    })
+    .filter((index) => index >= 0);
+
+  if (!directContent.length) return new Set();
+
+  const indexes = new Set(directContent);
+  const first = Math.min(...indexes);
+  const last = Math.max(...indexes);
+  for (let index = first; index <= last; index += 1) {
+    if (!block[index].trim()) indexes.add(index);
+  }
+  return indexes;
+}
+
+function extractSectionFromExpertBlock(block, section) {
   if (block.length < 2) return { summary: [], profile: block };
   const title = block[0];
   const tail = block.slice(1);
-  const indexes = availabilityIndexes(tail);
+  const indexes = movableSectionIndexes(tail, section);
   if (!indexes.size) return { summary: [], profile: block };
 
-  const availability = collapseBlankLines(trimBlankEdges(
+  const selected = collapseBlankLines(trimBlankEdges(
     tail.filter((_, index) => indexes.has(index)),
   ));
   const profileTail = trimBlankEdges(tail.filter((_, index) => !indexes.has(index)));
 
   return {
-    summary: [title, ...availability],
+    summary: [title, ...selected],
     profile: profileTail.length ? [title, ...profileTail] : [title],
   };
 }
@@ -121,7 +145,9 @@ function expertBlockEnd(lines, start) {
   return lines.length;
 }
 
-export function reorderAvailabilityLines(text) {
+export function reorderAvailabilityLines(text, section = "availability") {
+  if (section === "none") return text;
+
   const lines = text.split(/\r?\n/);
   const projectLinksIndex = lines.findIndex(isProjectLinksStartLine);
 
@@ -145,7 +171,7 @@ export function reorderAvailabilityLines(text) {
         continue;
       }
       const end = expertBlockEnd(lines, index);
-      const extracted = extractAvailabilityFromExpertBlock(lines.slice(index, end));
+      const extracted = extractSectionFromExpertBlock(lines.slice(index, end), section);
       if (extracted.summary.length) {
         if (summaries.length) summaries.push("");
         summaries.push(...extracted.summary);
@@ -165,6 +191,10 @@ export function reorderAvailabilityLines(text) {
       ].join("\n");
     }
   }
+
+  // Without a project-link boundary there is nowhere to create an email-body
+  // summary. Preserve the existing Availability fallback for older inputs.
+  if (section !== "availability") return text;
 
   const output = [];
   let index = 0;
