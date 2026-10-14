@@ -99,7 +99,7 @@ function reorderExpertBlock(block) {
 
 function movableSectionIndexes(block, section) {
   if (section === "availability") return availabilityIndexes(block);
-  if (section !== "intro" && section !== "qa") return new Set();
+  if (section !== "intro") return new Set();
 
   const classifications = classifyProfileSections(block.join("\n"));
   const directContent = block
@@ -146,8 +146,6 @@ function expertBlockEnd(lines, start) {
 }
 
 export function reorderAvailabilityLines(text, section = "availability") {
-  if (section === "none") return text;
-
   const lines = text.split(/\r?\n/);
   const projectLinksIndex = lines.findIndex(isProjectLinksStartLine);
 

@@ -35,7 +35,7 @@ type Lang = "zh" | "ja" | "en" | "ko";
 type PaletteId = "tb" | "ocean" | "forest" | "plum" | "amber" | "slate";
 type EmphasisVariantId = "color" | "marker" | "colorMarker" | "strong" | "underline";
 type IntroTreatmentId = "none" | "color" | "bold" | "marker";
-type AboveLinksSectionId = "availability" | "intro" | "qa" | "none";
+type AboveLinksSectionId = "availability" | "intro";
 type Appearance = { palette: PaletteId; emphasisVariant: EmphasisVariantId };
 type EditorPaletteKind = "text" | "highlight";
 type FormatOptions = {
@@ -75,7 +75,7 @@ const PALETTES: Record<PaletteId, { accent: string; key: string; soft: string; b
 };
 const EMPHASIS_VARIANTS: EmphasisVariantId[] = ["color", "marker", "colorMarker", "strong", "underline"];
 const INTRO_TREATMENTS: IntroTreatmentId[] = ["none", "color", "bold", "marker"];
-const ABOVE_LINKS_SECTIONS: AboveLinksSectionId[] = ["availability", "intro", "qa", "none"];
+const ABOVE_LINKS_SECTIONS: AboveLinksSectionId[] = ["availability", "intro"];
 const TEXT_COLOR_CHOICES = [
   "#171717", "#434343", "#666666", "#999999", "#b7b7b7", "#ffffff",
   "#980000", "#e83b2e", "#c34f32", "#f29900", "#9a6a22", "#6a4b17",
@@ -106,7 +106,7 @@ const UI = {
     palettes: ["TB 经典", "海洋蓝", "森林绿", "梅紫", "暖琥珀", "商务灰"],
     emphasisStyles: ["彩色粗体", "荧光笔", "彩色荧光", "黑色重粗", "彩色下划线"],
     options: "简易设置", introLabel: "介绍文", introTreatments: ["无", "标色", "加粗", "荧光"], profileFrames: "专家资料加框", entityHighlight: "自动标记公司／职位",
-    aboveLinksLabel: "项目链接上方", aboveLinksOptions: ["Availability", "介绍文", "Q&A", "保留原位"], aboveLinksHint: "自动带专家 Title",
+    aboveLinksLabel: "项目链接上方", aboveLinksOptions: ["Availability", "介绍文"], aboveLinksHint: "自动带专家 Title",
     manualEdit: "手动调整", bold: "加粗／取消加粗", normal: "恢复常规", underline: "下划线", textColor: "文字颜色", highlightColor: "背景颜色", customColor: "自选颜色", removeHighlight: "去除背景", clearFormatting: "清除格式", undo: "撤销", redo: "重做", editHint: "选中文字后调整",
     previous: "上一个", next: "下一个",
     linksKept: "已保留链接",
@@ -131,7 +131,7 @@ const UI = {
     palettes: ["TBクラシック", "オーシャン", "フォレスト", "プラム", "アンバー", "ビジネスグレー"],
     emphasisStyles: ["カラー太字", "マーカー", "カラー＋マーカー", "黒の太字", "カラー下線"],
     options: "簡単設定", introLabel: "紹介文", introTreatments: ["なし", "カラー", "太字", "マーカー"], profileFrames: "専門家ごとに枠を付ける", entityHighlight: "会社・役職を自動強調",
-    aboveLinksLabel: "プロジェクトリンクの上", aboveLinksOptions: ["Availability", "紹介文", "Q&A", "元の位置"], aboveLinksHint: "専門家Titleも自動表示",
+    aboveLinksLabel: "プロジェクトリンクの上", aboveLinksOptions: ["Availability", "紹介文"], aboveLinksHint: "専門家Titleも自動表示",
     manualEdit: "手動調整", bold: "太字／太字を解除", normal: "通常の太さ", underline: "下線", textColor: "文字色", highlightColor: "背景色", customColor: "色を選択", removeHighlight: "背景色を解除", clearFormatting: "書式をクリア", undo: "元に戻す", redo: "やり直す", editHint: "文字を選んで調整",
     previous: "前へ", next: "次へ",
     linksKept: "リンクを保持",
@@ -156,7 +156,7 @@ const UI = {
     palettes: ["TB classic", "Ocean", "Forest", "Plum", "Amber", "Business gray"],
     emphasisStyles: ["Color bold", "Highlighter", "Color + highlight", "Strong black", "Color underline"],
     options: "Simple settings", introLabel: "Introduction", introTreatments: ["None", "Color", "Bold", "Highlight"], profileFrames: "Frame each expert", entityHighlight: "Auto-highlight companies & roles",
-    aboveLinksLabel: "Above project links", aboveLinksOptions: ["Availability", "Introduction", "Q&A", "Keep in place"], aboveLinksHint: "Expert title included",
+    aboveLinksLabel: "Above project links", aboveLinksOptions: ["Availability", "Introduction"], aboveLinksHint: "Expert title included",
     manualEdit: "Edit", bold: "Bold / unbold", normal: "Regular weight", underline: "Underline", textColor: "Text color", highlightColor: "Highlight color", customColor: "Custom color", removeHighlight: "Remove highlight", clearFormatting: "Clear formatting", undo: "Undo", redo: "Redo", editHint: "Select text to edit",
     previous: "Previous", next: "Next",
     linksKept: "links preserved",
@@ -181,7 +181,7 @@ const UI = {
     palettes: ["TB 클래식", "오션", "포레스트", "플럼", "앰버", "비즈니스 그레이"],
     emphasisStyles: ["색상 굵게", "형광펜", "색상＋형광펜", "검정 굵게", "색상 밑줄"],
     options: "간단 설정", introLabel: "소개문", introTreatments: ["없음", "색상", "굵게", "형광펜"], profileFrames: "전문가별 테두리", entityHighlight: "회사／직책 자동 강조",
-    aboveLinksLabel: "프로젝트 링크 위", aboveLinksOptions: ["Availability", "소개문", "Q&A", "원래 위치"], aboveLinksHint: "전문가 Title 자동 포함",
+    aboveLinksLabel: "프로젝트 링크 위", aboveLinksOptions: ["Availability", "소개문"], aboveLinksHint: "전문가 Title 자동 포함",
     manualEdit: "직접 수정", bold: "굵게／굵게 해제", normal: "기본 굵기", underline: "밑줄", textColor: "글자 색", highlightColor: "배경 색", customColor: "색상 선택", removeHighlight: "배경 색 제거", clearFormatting: "서식 지우기", undo: "실행 취소", redo: "다시 실행", editHint: "텍스트를 선택해 수정",
     previous: "이전", next: "다음",
     linksKept: "개 링크 유지",

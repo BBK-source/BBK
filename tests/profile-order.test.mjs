@@ -139,50 +139,6 @@ test("can place the expert introduction with its title above project links", () 
   assert.equal(reordered.filter((line) => line.includes("robotics business")).length, 1);
 });
 
-test("can place Q&A with the expert title above project links", () => {
-  const source = [
-    "View project online",
-    "",
-    "#1.1 - First Expert - Former VP",
-    "Book Now",
-    "Profile introduction remains in the full profile.",
-    "[Screened on Oct 8]",
-    "Q1-1. Which products have you worked with?",
-    "A1-1. Industrial and collaborative robots.",
-    "Employment History:",
-    "Mar 2020 - Present",
-    "Availability (JST):",
-    "• Thursday 08 October 3:00 PM - 4:00 PM",
-  ].join("\n");
-
-  const reordered = reorderAvailabilityLines(source, "qa").split("\n");
-  const title = "#1.1 - First Expert - Former VP";
-  const linksIndex = reordered.indexOf("View project online");
-  const summaryTitleIndex = reordered.indexOf(title);
-  const profileTitleIndex = reordered.lastIndexOf(title);
-
-  assert.ok(summaryTitleIndex < linksIndex);
-  assert.equal(reordered[summaryTitleIndex + 1], "[Screened on Oct 8]");
-  assert.equal(reordered[summaryTitleIndex + 2], "Q1-1. Which products have you worked with?");
-  assert.equal(reordered[summaryTitleIndex + 3], "A1-1. Industrial and collaborative robots.");
-  assert.ok(profileTitleIndex > linksIndex);
-  assert.ok(reordered.indexOf("Profile introduction remains in the full profile.") > profileTitleIndex);
-  assert.ok(reordered.indexOf("Employment History:") > profileTitleIndex);
-  assert.ok(reordered.indexOf("Availability (JST):") > profileTitleIndex);
-  assert.equal(reordered.filter((line) => line.startsWith("Q1-1")).length, 1);
-});
-
-test("can leave every profile section in its original position", () => {
-  const source = [
-    "View project online",
-    "#1.1 - First Expert",
-    "Availability (JST):",
-    "• Thursday 08 October 3:00 PM - 4:00 PM",
-  ].join("\n");
-
-  assert.equal(reorderAvailabilityLines(source, "none"), source);
-});
-
 test("reports expert profiles that have no availability", () => {
   const source = [
     "#1.1 - First Expert",
