@@ -120,7 +120,7 @@ function movableSectionIndexes(block, section) {
   return indexes;
 }
 
-function extractSectionFromExpertBlock(block, section) {
+function extractSectionFromExpertBlock(block, section, keepOriginal = false) {
   if (block.length < 2) return { summary: [], profile: block };
   const title = block[0];
   const tail = block.slice(1);
@@ -134,7 +134,7 @@ function extractSectionFromExpertBlock(block, section) {
 
   return {
     summary: [title, ...selected],
-    profile: profileTail.length ? [title, ...profileTail] : [title],
+    profile: keepOriginal ? block : profileTail.length ? [title, ...profileTail] : [title],
   };
 }
 
@@ -145,7 +145,7 @@ function expertBlockEnd(lines, start) {
   return lines.length;
 }
 
-export function reorderAvailabilityLines(text, section = "availability") {
+export function reorderAvailabilityLines(text, section = "availability", keepOriginal = false) {
   const lines = text.split(/\r?\n/);
   const projectLinksIndex = lines.findIndex(isProjectLinksStartLine);
 
@@ -169,7 +169,11 @@ export function reorderAvailabilityLines(text, section = "availability") {
         continue;
       }
       const end = expertBlockEnd(lines, index);
-      const extracted = extractSectionFromExpertBlock(lines.slice(index, end), section);
+      const extracted = extractSectionFromExpertBlock(
+        lines.slice(index, end),
+        section,
+        keepOriginal && section === "availability",
+      );
       if (extracted.summary.length) {
         if (summaries.length) summaries.push("");
         summaries.push(...extracted.summary);
