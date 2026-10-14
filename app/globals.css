@@ -258,9 +258,7 @@ h1 { margin: 0; font-size: clamp(32px, 3.2vw, 52px); letter-spacing: -.045em; li
   border-color: var(--blue-dark); background: var(--blue-dark); color: white; font-weight: 750;
 }
 .manualToolbar {
-  position: relative; z-index: 5; min-height: 44px; padding: 6px 12px;
-  border-bottom: 1px solid var(--line); background: #fff;
-  display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
+  display: none !important;
 }
 .manualToolbarLabel { margin-right: 4px; white-space: nowrap; }
 .editorTool {
