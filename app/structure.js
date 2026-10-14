@@ -3,7 +3,7 @@ const RECOMMENDATION_PREFIX =
 const EXPERT_ID =
   String.raw`(?:#(?:[A-Z][A-Z0-9]*|\d+)(?:[.-]\d+)*|[A-Z][A-Z0-9]*(?:[.-]\d+)+)`;
 export const EXPERT_LINE_RE = new RegExp(
-  String.raw`^(?:[-•]\s*)?${RECOMMENDATION_PREFIX}${EXPERT_ID}\s*[-–—]`,
+  String.raw`^(?:\|\s*)?(?:\*\*)?(?:[-•]\s*)?${RECOMMENDATION_PREFIX}${EXPERT_ID}\s*[-–—]`,
   "i",
 );
 
@@ -16,9 +16,11 @@ const BARE_INDEX = String.raw`[0-9０-９]{1,2}(?:\s*${INDEX_SEPARATOR}\s*[0-9�
 const PREFIX_END = String.raw`(?:\s*[.:：．、,，)）]\s*|\s+(?=\S))`;
 const STANDALONE_QUESTION = String.raw`(?:(?:[QＱ]|Question)\s*${LABELED_INDEX}|(?:質問|问题|問題|问|問)\s*${LABELED_INDEX})`;
 const STANDALONE_ANSWER = String.raw`(?:(?:[AＡ]|Answer|回答|答)\s*${LABELED_INDEX})`;
+const QUESTION_WORD = String.raw`(?:[oO○◦·•]\s*)?(?:[QＱ]\s*)?(?:質問|问题|問題|问|問)`;
+const CIRCLED_INDEX = String.raw`[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳]`;
 
 export const QUESTION_PREFIX_RE = new RegExp(
-  String.raw`^(?:${STANDALONE_QUESTION}\s*$|(?:(?:[QＱ]|Question)\s*(?:${LABELED_INDEX})?|(?:質問|问题|問題|问|問)\s*${LABELED_INDEX}|${BARE_INDEX})${PREFIX_END})`,
+  String.raw`^(?:${STANDALONE_QUESTION}\s*$|${QUESTION_WORD}(?:\s*${LABELED_INDEX})?\s*$|${CIRCLED_INDEX}\s*|(?:(?:[QＱ]|Question)\s*(?:${LABELED_INDEX})?|${QUESTION_WORD}\s*(?:${LABELED_INDEX})?|${BARE_INDEX})${PREFIX_END})`,
   "i",
 );
 
@@ -31,6 +33,23 @@ export const ARROW_ANSWER_RE = /^(?:>>+|→|⇒|->|=>)\s*/;
 
 export function isExpertLine(line) {
   return EXPERT_LINE_RE.test(line.trim());
+}
+
+export function normalizeCopiedText(text) {
+  return text
+    .replace(/<br\s*\/?\s*>/gi, "\n")
+    .split(/\r?\n/)
+    .map((line) => {
+      const stripped = line
+        .replace(/^\s*\|\s?/, "")
+        .replace(/\s?\|\s*$/, "")
+        .replace(/\*\*/g, "")
+        .replace(/&#x20;|&nbsp;/gi, " ")
+        .trimEnd();
+      if (/^(?:\s*:?-{1,}:?\s*(?:\||$))+$/.test(stripped)) return "";
+      return stripped.replace(/\s*\|\s*/g, "  ").trimStart();
+    })
+    .join("\n");
 }
 
 export function isScreenedHeading(line) {
@@ -56,6 +75,12 @@ export function isQuestionStart(line, nextNonBlank = "") {
   if (QUESTION_PREFIX_RE.test(value)) return true;
   return /[?？]\s*$/.test(value)
     && (ANSWER_PREFIX_RE.test(nextNonBlank.trim()) || ARROW_ANSWER_RE.test(nextNonBlank.trim()));
+}
+
+export function isQaTopicHeading(line, nextNonBlank = "") {
+  const value = line.trim();
+  return /^(?:[·•▪◦]\s*)?[^:：]{1,80}$/.test(value)
+    && isQuestionStart(nextNonBlank.trim());
 }
 
 export function isAnswerStart(line) {
