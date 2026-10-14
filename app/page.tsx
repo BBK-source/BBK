@@ -451,8 +451,8 @@ function formatIntroduction(
 }
 
 function detectStyle(text: string): StyleId {
-  const normalizedText = normalizeCopiedText(text);
-  const lines = normalizedText.split(/\r?\n/);
+  const normalizedText: string = normalizeCopiedText(text);
+  const lines: string[] = normalizedText.split(/\r?\n/);
   const expertLines = lines.filter((line) => EXPERT_LINE_RE.test(line.trim())).length;
   const questions = lines.filter((line, index) => {
     const trimmed = line.trim();
@@ -502,8 +502,8 @@ type StructureCheck = {
 };
 
 function analyzeSource(text: string, richLinks: RichLink[]): StructureCheck {
-  const normalizedText = normalizeCopiedText(text);
-  const lines = normalizedText.split(/\r?\n/);
+  const normalizedText: string = normalizeCopiedText(text);
+  const lines: string[] = normalizedText.split(/\r?\n/);
   const experts = lines.filter((line) => EXPERT_LINE_RE.test(line.trim())).length;
   const availabilityCoverage = countExpertsWithAvailability(normalizedText);
   const angles = lines.filter((_, index) => isAngleTitleLine(lines, index)).length;
@@ -723,8 +723,8 @@ function formatText(
   richLinks: RichLink[],
 ) {
   const style = requestedStyle === "smart" ? detectStyle(text) : requestedStyle;
-  const normalizedText = normalizeCopiedText(text);
-  const sourceLines = normalizedText.split(/\r?\n/);
+  const normalizedText: string = normalizeCopiedText(text);
+  const sourceLines: string[] = normalizedText.split(/\r?\n/);
   const lines: string[] = reorderAvailabilityLines(
     normalizedText,
     options.standaloneAvailability ? "availability" : options.aboveLinksSection,
@@ -1067,7 +1067,7 @@ export default function Home() {
   const { palette, emphasisVariant } = appearanceHistory[appearanceIndex];
   const effectiveStyle = style === "smart" ? detectStyle(source) : style;
   const sourceExpertCount = (source
-    ? normalizeCopiedText(source).split(/\r?\n/)
+    ? (normalizeCopiedText(source) as string).split(/\r?\n/)
     : [])
     .filter((line) => EXPERT_LINE_RE.test(line.trim()))
     .length;
