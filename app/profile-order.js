@@ -232,3 +232,31 @@ export function countExpertsWithAvailability(text) {
 
   return { experts, withAvailability };
 }
+
+export function buildAvailabilitySummary(text) {
+  const allLines = text.split(/\r?\n/);
+  const projectLinksIndex = allLines.findIndex(isProjectLinksStartLine);
+  const lines = projectLinksIndex >= 0 ? allLines.slice(projectLinksIndex + 1) : allLines;
+  const summary = [];
+  let index = 0;
+
+  while (index < lines.length) {
+    if (!isExpertLine(lines[index])) {
+      index += 1;
+      continue;
+    }
+    const end = expertBlockEnd(lines, index);
+    const block = lines.slice(index, end);
+    const indexes = availabilityIndexes(block.slice(1));
+    if (indexes.size) {
+      if (summary.length) summary.push("");
+      summary.push(block[0]);
+      summary.push(...collapseBlankLines(trimBlankEdges(
+        block.slice(1).filter((_, lineIndex) => indexes.has(lineIndex)),
+      )));
+    }
+    index = end;
+  }
+
+  return summary.join("\n");
+}
