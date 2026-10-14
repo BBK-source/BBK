@@ -45,7 +45,7 @@ type AboveLinksSectionId = "availability" | "intro";
 type Appearance = { palette: PaletteId; emphasisVariant: EmphasisVariantId };
 type EditorPaletteKind = "text" | "highlight";
 type SummaryListMode = "availability" | "titles";
-type TitleListStyle = "simple" | "highlight";
+type SummaryListStyle = "simple" | "highlight";
 type FormatOptions = {
   introTreatment: IntroTreatmentId;
   entityHighlights: boolean;
@@ -55,7 +55,6 @@ type FormatOptions = {
   blackAngleTitles: boolean;
   emphasisVariant: EmphasisVariantId;
   aboveLinksSection: AboveLinksSectionId;
-  standaloneAvailability: boolean;
 };
 type RichLink = { label: string; href: string };
 
@@ -115,7 +114,7 @@ const UI = {
     palettes: ["TB 经典", "海洋蓝", "森林绿", "梅紫", "暖琥珀", "商务灰"],
     emphasisStyles: ["彩色粗体", "荧光笔", "彩色荧光", "黑色重粗", "彩色下划线"],
     options: "简易设置", introLabel: "介绍文", introTreatments: ["无", "标色", "加粗", "荧光"], profileFrames: "专家资料加框", entityHighlight: "自动标记公司／职位",
-    aboveLinksLabel: "项目链接上方", aboveLinksOptions: ["Availability", "介绍文"], aboveLinksHint: "自动带专家 Title", standaloneAvailability: "时间清单", standaloneTitles: "仅 Title", availabilityListTitle: "按 Angle 整理的时间清单", availabilityListHint: "只保留 Angle、专家 Title 和 24h 时间。", titleListTitle: "按 Angle 整理的 Title 清单", titleListHint: "只保留 Angle 和专家 Title，可单独复制。", titleListStyleLabel: "样式", titleListStyles: ["简约", "荧光笔"], includeAvailabilityInEmail: "同时加入邮件正文", copyAvailabilityList: "复制时间清单", copyTitleList: "复制 Title 清单", close: "关闭",
+    aboveLinksLabel: "项目链接上方", aboveLinksOptions: ["Availability", "介绍文"], aboveLinksHint: "自动带专家 Title", standaloneAvailability: "时间清单", standaloneTitles: "仅 Title", availabilityListTitle: "按 Angle 整理的时间清单", availabilityListHint: "只保留 Angle、专家 Title 和 24h 时间。", titleListTitle: "按 Angle 整理的 Title 清单", titleListHint: "只保留 Angle 和专家 Title，可单独复制。", summaryListStyleLabel: "清单样式", summaryListStyles: ["简约", "荧光笔"], copyAvailabilityList: "复制时间清单", copyTitleList: "复制 Title 清单", close: "关闭",
     manualEdit: "手动调整", bold: "加粗／取消加粗", normal: "恢复常规", underline: "下划线", textColor: "文字颜色", highlightColor: "背景颜色", customColor: "自选颜色", removeHighlight: "去除背景", clearFormatting: "清除格式", undo: "撤销", redo: "重做", editHint: "选中文字后调整",
     previous: "上一个", next: "下一个",
     linksKept: "已保留链接",
@@ -138,7 +137,7 @@ const UI = {
     palettes: ["TBクラシック", "オーシャン", "フォレスト", "プラム", "アンバー", "ビジネスグレー"],
     emphasisStyles: ["カラー太字", "マーカー", "カラー＋マーカー", "黒の太字", "カラー下線"],
     options: "簡単設定", introLabel: "紹介文", introTreatments: ["なし", "カラー", "太字", "マーカー"], profileFrames: "専門家ごとに枠を付ける", entityHighlight: "会社・役職を自動強調",
-    aboveLinksLabel: "プロジェクトリンクの上", aboveLinksOptions: ["Availability", "紹介文"], aboveLinksHint: "専門家Titleも自動表示", standaloneAvailability: "時間一覧", standaloneTitles: "Titleのみ", availabilityListTitle: "Angle別の時間一覧", availabilityListHint: "Angle・専門家Title・24時間表記の時間だけを表示します。", titleListTitle: "Angle別のTitle一覧", titleListHint: "Angleと専門家Titleだけを個別にコピーできます。", titleListStyleLabel: "スタイル", titleListStyles: ["シンプル", "マーカー"], includeAvailabilityInEmail: "メール本文にも追加", copyAvailabilityList: "時間一覧をコピー", copyTitleList: "Title一覧をコピー", close: "閉じる",
+    aboveLinksLabel: "プロジェクトリンクの上", aboveLinksOptions: ["Availability", "紹介文"], aboveLinksHint: "専門家Titleも自動表示", standaloneAvailability: "時間一覧", standaloneTitles: "Titleのみ", availabilityListTitle: "Angle別の時間一覧", availabilityListHint: "Angle・専門家Title・24時間表記の時間だけを表示します。", titleListTitle: "Angle別のTitle一覧", titleListHint: "Angleと専門家Titleだけを個別にコピーできます。", summaryListStyleLabel: "一覧スタイル", summaryListStyles: ["シンプル", "マーカー"], copyAvailabilityList: "時間一覧をコピー", copyTitleList: "Title一覧をコピー", close: "閉じる",
     manualEdit: "手動調整", bold: "太字／太字を解除", normal: "通常の太さ", underline: "下線", textColor: "文字色", highlightColor: "背景色", customColor: "色を選択", removeHighlight: "背景色を解除", clearFormatting: "書式をクリア", undo: "元に戻す", redo: "やり直す", editHint: "文字を選んで調整",
     previous: "前へ", next: "次へ",
     linksKept: "リンクを保持",
@@ -161,7 +160,7 @@ const UI = {
     palettes: ["TB classic", "Ocean", "Forest", "Plum", "Amber", "Business gray"],
     emphasisStyles: ["Color bold", "Highlighter", "Color + highlight", "Strong black", "Color underline"],
     options: "Simple settings", introLabel: "Introduction", introTreatments: ["None", "Color", "Bold", "Highlight"], profileFrames: "Frame each expert", entityHighlight: "Auto-highlight companies & roles",
-    aboveLinksLabel: "Above project links", aboveLinksOptions: ["Availability", "Introduction"], aboveLinksHint: "Expert title included", standaloneAvailability: "Time list", standaloneTitles: "Titles only", availabilityListTitle: "Time list by angle", availabilityListHint: "Angles, expert titles and 24-hour times only.", titleListTitle: "Title list by angle", titleListHint: "Angles and expert titles only, ready to copy separately.", titleListStyleLabel: "Style", titleListStyles: ["Simple", "Highlighter"], includeAvailabilityInEmail: "Also include in email", copyAvailabilityList: "Copy time list", copyTitleList: "Copy title list", close: "Close",
+    aboveLinksLabel: "Above project links", aboveLinksOptions: ["Availability", "Introduction"], aboveLinksHint: "Expert title included", standaloneAvailability: "Time list", standaloneTitles: "Titles only", availabilityListTitle: "Time list by angle", availabilityListHint: "Angles, expert titles and 24-hour times only.", titleListTitle: "Title list by angle", titleListHint: "Angles and expert titles only, ready to copy separately.", summaryListStyleLabel: "List style", summaryListStyles: ["Simple", "Highlighter"], copyAvailabilityList: "Copy time list", copyTitleList: "Copy title list", close: "Close",
     manualEdit: "Edit", bold: "Bold / unbold", normal: "Regular weight", underline: "Underline", textColor: "Text color", highlightColor: "Highlight color", customColor: "Custom color", removeHighlight: "Remove highlight", clearFormatting: "Clear formatting", undo: "Undo", redo: "Redo", editHint: "Select text to edit",
     previous: "Previous", next: "Next",
     linksKept: "links preserved",
@@ -184,7 +183,7 @@ const UI = {
     palettes: ["TB 클래식", "오션", "포레스트", "플럼", "앰버", "비즈니스 그레이"],
     emphasisStyles: ["색상 굵게", "형광펜", "색상＋형광펜", "검정 굵게", "색상 밑줄"],
     options: "간단 설정", introLabel: "소개문", introTreatments: ["없음", "색상", "굵게", "형광펜"], profileFrames: "전문가별 테두리", entityHighlight: "회사／직책 자동 강조",
-    aboveLinksLabel: "프로젝트 링크 위", aboveLinksOptions: ["Availability", "소개문"], aboveLinksHint: "전문가 Title 자동 포함", standaloneAvailability: "시간 목록", standaloneTitles: "Title만", availabilityListTitle: "Angle별 시간 목록", availabilityListHint: "Angle, 전문가 Title, 24시간 표기만 표시합니다.", titleListTitle: "Angle별 Title 목록", titleListHint: "Angle과 전문가 Title만 별도로 복사할 수 있습니다.", titleListStyleLabel: "스타일", titleListStyles: ["심플", "형광펜"], includeAvailabilityInEmail: "이메일 본문에도 추가", copyAvailabilityList: "시간 목록 복사", copyTitleList: "Title 목록 복사", close: "닫기",
+    aboveLinksLabel: "프로젝트 링크 위", aboveLinksOptions: ["Availability", "소개문"], aboveLinksHint: "전문가 Title 자동 포함", standaloneAvailability: "시간 목록", standaloneTitles: "Title만", availabilityListTitle: "Angle별 시간 목록", availabilityListHint: "Angle, 전문가 Title, 24시간 표기만 표시합니다.", titleListTitle: "Angle별 Title 목록", titleListHint: "Angle과 전문가 Title만 별도로 복사할 수 있습니다.", summaryListStyleLabel: "목록 스타일", summaryListStyles: ["심플", "형광펜"], copyAvailabilityList: "시간 목록 복사", copyTitleList: "Title 목록 복사", close: "닫기",
     manualEdit: "직접 수정", bold: "굵게／굵게 해제", normal: "기본 굵기", underline: "밑줄", textColor: "글자 색", highlightColor: "배경 색", customColor: "색상 선택", removeHighlight: "배경 색 제거", clearFormatting: "서식 지우기", undo: "실행 취소", redo: "다시 실행", editHint: "텍스트를 선택해 수정",
     previous: "이전", next: "다음",
     linksKept: "개 링크 유지",
@@ -729,8 +728,8 @@ function formatText(
   const sourceLines: string[] = normalizedText.split(/\r?\n/);
   const lines: string[] = reorderAvailabilityLines(
     normalizedText,
-    options.standaloneAvailability ? "availability" : options.aboveLinksSection,
-    options.standaloneAvailability,
+    options.aboveLinksSection,
+    false,
   ).split(/\r?\n/);
   const expertCount = sourceLines.filter((line) => EXPERT_LINE_RE.test(line.trim())).length;
   let section: ProfileSection = "body";
@@ -1046,9 +1045,8 @@ export default function Home() {
   const [appearanceIndex, setAppearanceIndex] = useState(0);
   const [introTreatment, setIntroTreatment] = useState<IntroTreatmentId>("none");
   const [aboveLinksSection, setAboveLinksSection] = useState<AboveLinksSectionId>("availability");
-  const [standaloneAvailability, setStandaloneAvailability] = useState(false);
   const [summaryListMode, setSummaryListMode] = useState<SummaryListMode | null>(null);
-  const [titleListStyle, setTitleListStyle] = useState<TitleListStyle>("simple");
+  const [summaryListStyle, setSummaryListStyle] = useState<SummaryListStyle>("simple");
   const [summaryListCopied, setSummaryListCopied] = useState(false);
   const [profileFrames, setProfileFrames] = useState(true);
   const [entityHighlights, setEntityHighlights] = useState(false);
@@ -1081,8 +1079,8 @@ export default function Home() {
   const fullProfileCards = profileFrames && !compactExpertLayout && !plainTextLayout;
   const blackAngleTitles = true;
   const formatOptions = useMemo(
-    () => ({ introTreatment, entityHighlights, expertCards, angleGroups, fullProfileCards, blackAngleTitles, emphasisVariant, aboveLinksSection, standaloneAvailability }),
-    [introTreatment, entityHighlights, expertCards, angleGroups, fullProfileCards, blackAngleTitles, emphasisVariant, aboveLinksSection, standaloneAvailability],
+    () => ({ introTreatment, entityHighlights, expertCards, angleGroups, fullProfileCards, blackAngleTitles, emphasisVariant, aboveLinksSection }),
+    [introTreatment, entityHighlights, expertCards, angleGroups, fullProfileCards, blackAngleTitles, emphasisVariant, aboveLinksSection],
   );
   const html = useMemo(
     () => formatText(source, style, palette, formatOptions, richLinks),
@@ -1093,23 +1091,24 @@ export default function Home() {
   const availabilitySummaryHtml = useMemo(
     () => formatText(
       availabilitySummary,
-      "classic",
-      palette,
+      summaryListStyle === "highlight" ? "classic" : "minimal",
+      "tb",
       {
         ...formatOptions,
         aboveLinksSection: "availability",
-        standaloneAvailability: false,
+        entityHighlights: false,
+        emphasisVariant: summaryListStyle === "highlight" ? "marker" : "strong",
         angleGroups: true,
         expertCards: true,
         fullProfileCards: true,
       },
       [],
     ),
-    [availabilitySummary, palette, formatOptions],
+    [availabilitySummary, summaryListStyle, formatOptions],
   );
   const titleSummaryHtml = useMemo(
-    () => renderTitleSummaryHtml(titleSummary, titleListStyle),
-    [titleSummary, titleListStyle],
+    () => renderTitleSummaryHtml(titleSummary, summaryListStyle),
+    [titleSummary, summaryListStyle],
   );
   const activeSummaryHtml = summaryListMode === "titles" ? titleSummaryHtml : availabilitySummaryHtml;
   const selectedStyleIndex = STYLE_IDS.indexOf(style);
@@ -1861,28 +1860,26 @@ export default function Home() {
               </div>
               <button type="button" className="availabilityModalClose" onClick={() => setSummaryListMode(null)} aria-label={t.close}>×</button>
             </div>
-            {summaryListMode === "titles" && (
-              <div className="titleListStyleBar">
-                <span>{t.titleListStyleLabel}</span>
-                <div className="titleListStyleSegments" role="radiogroup" aria-label={t.titleListStyleLabel}>
-                  {(["simple", "highlight"] as TitleListStyle[]).map((item, index) => (
+            <div className="summaryListStyleBar">
+              <span>{t.summaryListStyleLabel}</span>
+              <div className="summaryListStyleSegments" role="radiogroup" aria-label={t.summaryListStyleLabel}>
+                {(["simple", "highlight"] as SummaryListStyle[]).map((item, index) => (
                     <button
                       key={item}
                       type="button"
                       role="radio"
-                      aria-checked={titleListStyle === item}
-                      className={titleListStyle === item ? "active" : ""}
+                      aria-checked={summaryListStyle === item}
+                      className={summaryListStyle === item ? "active" : ""}
                       onClick={() => {
                         setSummaryListCopied(false);
-                        setTitleListStyle(item);
+                        setSummaryListStyle(item);
                       }}
                     >
-                      {t.titleListStyles[index]}
+                      {t.summaryListStyles[index]}
                     </button>
-                  ))}
-                </div>
+                ))}
               </div>
-            )}
+            </div>
             <div
               ref={summaryListRef}
               className="availabilityListPreview"
@@ -1891,19 +1888,6 @@ export default function Home() {
               dangerouslySetInnerHTML={{ __html: activeSummaryHtml }}
             />
             <div className="availabilityModalActions">
-              {summaryListMode === "availability" ? (
-                <label className="includeAvailabilityOption">
-                  <input
-                    type="checkbox"
-                    checked={standaloneAvailability}
-                    onChange={(event) => {
-                      setStandaloneAvailability(event.target.checked);
-                      if (event.target.checked) setAboveLinksSection("availability");
-                    }}
-                  />
-                  <span>{t.includeAvailabilityInEmail}</span>
-                </label>
-              ) : <span />}
               <button type="button" className="availabilityCopyButton" onClick={copySummaryList}>
                 {summaryListCopied ? t.copied : summaryListMode === "titles" ? t.copyTitleList : t.copyAvailabilityList}
               </button>
