@@ -1,7 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { collapseQaParagraphLines } from "../app/qa-paragraphs.js";
+import {
+  collapseQaParagraphLines,
+  inferImplicitAnswerPrefixes,
+} from "../app/qa-paragraphs.js";
 
 test("collapses consecutive Q&A continuation lines into natural paragraphs", () => {
   const lines = [
@@ -81,4 +84,48 @@ test("preserves an explicitly bulleted Q&A topic boundary", () => {
     "Q2: 標準仕様はどのように決めますか？",
     "A2: 本社と各拠点で決定します。",
   ]);
+});
+
+test("infers answers that are separated from complete questions by a blank line", () => {
+  const lines = [
+    "Q3. Can you discuss the process of setting standard costs for products?",
+    "",
+    "Yes, standard cost setting has been one of my core responsibilities.",
+    "",
+    "The process requires input from several departments.",
+    "",
+    "Q4. Can you discuss category-level P&L management?",
+    "",
+    "I regularly reviewed product profitability.",
+  ];
+
+  assert.deepEqual(inferImplicitAnswerPrefixes(lines), [
+    "Q3. Can you discuss the process of setting standard costs for products?",
+    "",
+    "A: Yes, standard cost setting has been one of my core responsibilities.",
+    "",
+    "The process requires input from several departments.",
+    "",
+    "Q4. Can you discuss category-level P&L management?",
+    "",
+    "A: I regularly reviewed product profitability.",
+  ]);
+
+  assert.deepEqual(collapseQaParagraphLines(lines), [
+    "Q3. Can you discuss the process of setting standard costs for products?",
+    "A: Yes, standard cost setting has been one of my core responsibilities. The process requires input from several departments.",
+    "Q4. Can you discuss category-level P&L management?",
+    "A: I regularly reviewed product profitability.",
+  ]);
+});
+
+test("does not infer an answer when the next block is a new section", () => {
+  const lines = [
+    "Q5. Which brands can you discuss?",
+    "",
+    "Employment History:",
+    "Mar 2025 - Present",
+  ];
+
+  assert.deepEqual(inferImplicitAnswerPrefixes(lines), lines);
 });

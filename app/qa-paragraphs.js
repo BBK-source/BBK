@@ -55,8 +55,44 @@ function isSectionBoundary(lines, index, nextNonBlank) {
     || (/[:：]\s*$/.test(value) && EXPERT_LINE_RE.test(nextNonBlank));
 }
 
-export function collapseQaParagraphLines(sourceLines) {
+export function inferImplicitAnswerPrefixes(sourceLines) {
   const lines = [...sourceLines];
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const value = lines[index].trim();
+    const nextIndex = nextNonBlankLineIndex(lines, index);
+    const nextNonBlank = nextIndex >= 0 ? lines[nextIndex].trim() : "";
+
+    // Some profile exports omit A:/>> entirely and separate the answer from
+    // the completed question with a blank line. Add a neutral answer marker
+    // so the existing Q&A formatter and diagnostics can treat it correctly.
+    if (
+      !/[?？]\s*$/.test(value)
+      || !isQuestionStart(value, nextNonBlank)
+      || nextIndex <= index + 1
+      || ANSWER_PREFIX_RE.test(nextNonBlank)
+      || ARROW_ANSWER_RE.test(nextNonBlank)
+    ) {
+      continue;
+    }
+
+    const afterIndex = nextNonBlankLineIndex(lines, nextIndex);
+    const afterCandidate = afterIndex >= 0 ? lines[afterIndex].trim() : "";
+    if (
+      isQuestionStart(nextNonBlank, afterCandidate)
+      || isSectionBoundary(lines, nextIndex, afterCandidate)
+    ) {
+      continue;
+    }
+
+    lines[nextIndex] = `${lines[nextIndex].match(/^\s*/)?.[0] ?? ""}A: ${nextNonBlank}`;
+  }
+
+  return lines;
+}
+
+export function collapseQaParagraphLines(sourceLines) {
+  const lines = inferImplicitAnswerPrefixes(sourceLines);
   const output = [];
   let activeRole = null;
   let paragraphLines = [];

@@ -20,7 +20,7 @@ import {
   normalizeCopiedText,
 } from "./structure.js";
 import { applyIntroTreatment } from "./intro-treatment.js";
-import { collapseQaParagraphLines } from "./qa-paragraphs.js";
+import { collapseQaParagraphLines, inferImplicitAnswerPrefixes } from "./qa-paragraphs.js";
 import {
   emphasizeAvailabilityTimes,
   isAvailabilityLine,
@@ -29,12 +29,10 @@ import {
   normalizeAvailabilityTimes,
 } from "./availability.js";
 import {
-  AVAILABILITY_SUMMARY_END,
   buildAvailabilitySummary,
   buildTitleSummary,
   countExpertsWithAvailability,
   renderTitleSummaryHtml,
-  reorderAvailabilityLines,
 } from "./profile-order.js";
 
 type StyleId = "smart" | "classic" | "list" | "qa" | "minimal";
@@ -42,7 +40,6 @@ type Lang = "zh" | "ja" | "en" | "ko";
 type PaletteId = "tb" | "ocean" | "forest" | "plum" | "amber" | "slate";
 type EmphasisVariantId = "color" | "marker" | "colorMarker" | "strong" | "underline";
 type IntroTreatmentId = "none" | "color" | "bold" | "marker";
-type AboveLinksSectionId = "availability" | "intro";
 type Appearance = { palette: PaletteId; emphasisVariant: EmphasisVariantId };
 type EditorPaletteKind = "text" | "highlight";
 type SummaryListMode = "availability" | "titles";
@@ -55,7 +52,6 @@ type FormatOptions = {
   fullProfileCards: boolean;
   blackAngleTitles: boolean;
   emphasisVariant: EmphasisVariantId;
-  aboveLinksSection: AboveLinksSectionId;
 };
 type RichLink = { label: string; href: string };
 
@@ -84,7 +80,6 @@ const PALETTES: Record<PaletteId, { accent: string; key: string; soft: string; b
 };
 const EMPHASIS_VARIANTS: EmphasisVariantId[] = ["color", "marker", "colorMarker", "strong", "underline"];
 const INTRO_TREATMENTS: IntroTreatmentId[] = ["none", "color", "bold", "marker"];
-const ABOVE_LINKS_SECTIONS: AboveLinksSectionId[] = ["availability", "intro"];
 const TEXT_COLOR_CHOICES = [
   "#171717", "#434343", "#666666", "#999999", "#b7b7b7", "#ffffff",
   "#980000", "#e83b2e", "#c34f32", "#f29900", "#9a6a22", "#6a4b17",
@@ -505,7 +500,7 @@ type StructureCheck = {
 
 function analyzeSource(text: string, richLinks: RichLink[]): StructureCheck {
   const normalizedText: string = normalizeCopiedText(text);
-  const lines: string[] = normalizedText.split(/\r?\n/);
+  const lines: string[] = inferImplicitAnswerPrefixes(normalizedText.split(/\r?\n/));
   const experts = lines.filter((line) => EXPERT_LINE_RE.test(line.trim())).length;
   const availabilityCoverage = countExpertsWithAvailability(normalizedText);
   const angles = lines.filter((_, index) => isAngleTitleLine(lines, index)).length;
@@ -727,13 +722,7 @@ function formatText(
   const style = requestedStyle === "smart" ? detectStyle(text) : requestedStyle;
   const normalizedText: string = normalizeCopiedText(text);
   const sourceLines: string[] = normalizedText.split(/\r?\n/);
-  const lines: string[] = collapseQaParagraphLines(
-    reorderAvailabilityLines(
-      normalizedText,
-      options.aboveLinksSection,
-      false,
-    ).split(/\r?\n/),
-  );
+  const lines: string[] = collapseQaParagraphLines(normalizedText.split(/\r?\n/));
   const expertCount = sourceLines.filter((line) => EXPERT_LINE_RE.test(line.trim())).length;
   let section: ProfileSection = "body";
   let qaFlow: QaRole = null;
@@ -808,14 +797,6 @@ function formatText(
     const nextNonBlank = nextNonBlankIndex >= 0 ? lines[nextNonBlankIndex].trim() : "";
     const isAngleTitle = isAngleTitleLine(lines, index);
     const isExpertLine = EXPERT_LINE_RE.test(trimmed);
-
-    if (trimmed === AVAILABILITY_SUMMARY_END) {
-      closeGroup();
-      section = "body";
-      qaFlow = null;
-      previousLineWasBlank = false;
-      continue;
-    }
 
     if (!trimmed) {
       if (previousLineWasBlank) continue;
@@ -1049,7 +1030,6 @@ export default function Home() {
   ]);
   const [appearanceIndex, setAppearanceIndex] = useState(0);
   const [introTreatment, setIntroTreatment] = useState<IntroTreatmentId>("none");
-  const [aboveLinksSection, setAboveLinksSection] = useState<AboveLinksSectionId>("availability");
   const [summaryListMode, setSummaryListMode] = useState<SummaryListMode | null>(null);
   const [summaryListStyle, setSummaryListStyle] = useState<SummaryListStyle>("simple");
   const [summaryListCopied, setSummaryListCopied] = useState(false);
@@ -1084,8 +1064,8 @@ export default function Home() {
   const fullProfileCards = profileFrames && !compactExpertLayout && !plainTextLayout;
   const blackAngleTitles = true;
   const formatOptions = useMemo(
-    () => ({ introTreatment, entityHighlights, expertCards, angleGroups, fullProfileCards, blackAngleTitles, emphasisVariant, aboveLinksSection }),
-    [introTreatment, entityHighlights, expertCards, angleGroups, fullProfileCards, blackAngleTitles, emphasisVariant, aboveLinksSection],
+    () => ({ introTreatment, entityHighlights, expertCards, angleGroups, fullProfileCards, blackAngleTitles, emphasisVariant }),
+    [introTreatment, entityHighlights, expertCards, angleGroups, fullProfileCards, blackAngleTitles, emphasisVariant],
   );
   const html = useMemo(
     () => formatText(source, style, palette, formatOptions, richLinks),
@@ -1100,7 +1080,6 @@ export default function Home() {
       "tb",
       {
         ...formatOptions,
-        aboveLinksSection: "availability",
         entityHighlights: false,
         emphasisVariant: summaryListStyle === "highlight" ? "marker" : "strong",
         angleGroups: true,
@@ -1641,25 +1620,7 @@ export default function Home() {
               </button>
             </div>
           </div>
-          <div className="projectLeadBar">
-            <div className="projectLeadLabel">
-              <span>{t.aboveLinksLabel}</span>
-              <small>{t.aboveLinksHint}</small>
-            </div>
-            <div className="projectLeadSegments" role="radiogroup" aria-label={t.aboveLinksLabel}>
-              {ABOVE_LINKS_SECTIONS.map((item, index) => (
-                <button
-                  key={item}
-                  type="button"
-                  role="radio"
-                  aria-checked={aboveLinksSection === item}
-                  className={aboveLinksSection === item ? "active" : ""}
-                  onClick={() => setAboveLinksSection(item)}
-                >
-                  {t.aboveLinksOptions[index]}
-                </button>
-              ))}
-            </div>
+          <div className="summaryActionBar">
             <div className="summaryListButtons">
               <button
                 type="button"
