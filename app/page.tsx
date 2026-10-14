@@ -14,8 +14,10 @@ import {
   QUESTION_PREFIX_RE,
   isAvailabilityHeading,
   isEmploymentHeading,
+  isQaTopicHeading,
   isQuestionStart,
   isScreenedHeading,
+  normalizeCopiedText,
 } from "./structure.js";
 import { applyIntroTreatment } from "./intro-treatment.js";
 import {
@@ -455,7 +457,8 @@ function formatIntroduction(
 }
 
 function detectStyle(text: string): StyleId {
-  const lines = text.split(/\r?\n/);
+  const normalizedText = normalizeCopiedText(text);
+  const lines = normalizedText.split(/\r?\n/);
   const expertLines = lines.filter((line) => EXPERT_LINE_RE.test(line.trim())).length;
   const questions = lines.filter((line, index) => {
     const trimmed = line.trim();
@@ -470,7 +473,7 @@ function detectStyle(text: string): StyleId {
   }).length;
   if (expertLines >= 3) return "list";
   if (questions >= 2 || (questions >= 1 && answers >= 1)) return "qa";
-  if (text.length < 700) return "minimal";
+  if (normalizedText.length < 700) return "minimal";
   return "classic";
 }
 
@@ -505,9 +508,10 @@ type StructureCheck = {
 };
 
 function analyzeSource(text: string, richLinks: RichLink[]): StructureCheck {
-  const lines = text.split(/\r?\n/);
+  const normalizedText = normalizeCopiedText(text);
+  const lines = normalizedText.split(/\r?\n/);
   const experts = lines.filter((line) => EXPERT_LINE_RE.test(line.trim())).length;
-  const availabilityCoverage = countExpertsWithAvailability(text);
+  const availabilityCoverage = countExpertsWithAvailability(normalizedText);
   const angles = lines.filter((_, index) => isAngleTitleLine(lines, index)).length;
   const questions = lines.filter((line, index) => {
     const trimmed = line.trim();
@@ -519,7 +523,7 @@ function analyzeSource(text: string, richLinks: RichLink[]): StructureCheck {
     const trimmed = line.trim();
     return ANSWER_PREFIX_RE.test(trimmed) || ARROW_ANSWER_RE.test(trimmed);
   }).length;
-  const bookNowItems = text.match(/\bBook\s*Now\b/gi)?.length ?? 0;
+  const bookNowItems = normalizedText.match(/\bBook\s*Now\b/gi)?.length ?? 0;
   const bookNowLinks = richLinks.filter((link) => /^Book\s*Now$/i.test(link.label)).length;
   const angleCandidates = lines.filter((line) => (
     /^(?:Angle\b|角度\b|アングル\b|앵글\b).*[:：]\s*$/i.test(line.trim())
@@ -625,6 +629,9 @@ function formatLine(
           : `font-weight:800;margin-top:9px;padding:5px 0 3px;border-top:1px solid #9aa5ad`;
     return `<div style="${screenedCss}">${safe}</div>`;
   }
+  if (section === "qa" && !qaRole && /^(?:[·•▪◦]\s*)/.test(raw.trim())) {
+    return `<div style="font-weight:800;margin-top:8px;padding:4px 0 2px;border-bottom:1px solid ${colors.border};color:${accent}">${safe}</div>`;
+  }
   if (qaRole === "question") {
     const labelMatch = raw.match(QUESTION_PREFIX_RE);
     const label = labelMatch ? escapeHtml(labelMatch[0].trimEnd()) : "";
@@ -722,9 +729,10 @@ function formatText(
   richLinks: RichLink[],
 ) {
   const style = requestedStyle === "smart" ? detectStyle(text) : requestedStyle;
-  const sourceLines = text.split(/\r?\n/);
+  const normalizedText = normalizeCopiedText(text);
+  const sourceLines = normalizedText.split(/\r?\n/);
   const lines: string[] = reorderAvailabilityLines(
-    text,
+    normalizedText,
     options.standaloneAvailability ? "availability" : options.aboveLinksSection,
     options.standaloneAvailability,
   ).split(/\r?\n/);
@@ -959,6 +967,11 @@ function formatText(
     let qaRole: QaRole = null;
     let qaStart = false;
 
+    if (isQaTopicHeading(trimmed, nextNonBlank)) {
+      section = "qa";
+      qaFlow = null;
+    }
+
     if (!trimmed) {
       const answerFollows =
         ANSWER_PREFIX_RE.test(nextNonBlank) || ARROW_ANSWER_RE.test(nextNonBlank);
@@ -1059,8 +1072,9 @@ export default function Home() {
   const t = UI[lang];
   const { palette, emphasisVariant } = appearanceHistory[appearanceIndex];
   const effectiveStyle = style === "smart" ? detectStyle(source) : style;
-  const sourceExpertCount = source
-    .split(/\r?\n/)
+  const sourceExpertCount = (source
+    ? normalizeCopiedText(source).split(/\r?\n/)
+    : [])
     .filter((line) => EXPERT_LINE_RE.test(line.trim()))
     .length;
   const compactExpertLayout = style === "list";
@@ -1077,7 +1091,7 @@ export default function Home() {
     () => formatText(source, style, palette, formatOptions, richLinks),
     [source, style, palette, formatOptions, richLinks],
   );
-  const availabilitySummary = useMemo(() => buildAvailabilitySummary(source), [source]);
+  const availabilitySummary = useMemo(() => buildAvailabilitySummary(normalizeCopiedText(source)), [source]);
   const availabilitySummaryHtml = useMemo(
     () => formatText(
       availabilitySummary,
@@ -1289,7 +1303,7 @@ export default function Home() {
         };
       })
       .filter((link) => link.label && Boolean(safeLink(link.href)));
-    setSource(editor.innerText.replaceAll("\u00a0", " "));
+    setSource(normalizeCopiedText(editor.innerText.replaceAll("\u00a0", " ")));
     setRichLinks(links);
   }
 
@@ -1310,7 +1324,6 @@ export default function Home() {
     if (sourceInputRef.current) sourceInputRef.current.innerHTML = "";
     setSource("");
     setRichLinks([]);
-    setActiveEditorPalette(null);
   }
 
   function rememberPreviewSelection() {
@@ -1812,28 +1825,8 @@ export default function Home() {
           <div
             ref={previewRef}
             className={`preview style-${effectiveStyle}`}
-            contentEditable
-            suppressContentEditableWarning
-            role="textbox"
-            aria-multiline="true"
+            role="region"
             aria-label={t.result}
-            onMouseUp={rememberPreviewSelection}
-            onKeyUp={rememberPreviewSelection}
-            onInput={() => {
-              rememberPreviewSelection();
-              recordPreviewHistory();
-            }}
-            onKeyDown={(event) => {
-              if (!(event.metaKey || event.ctrlKey)) return;
-              const key = event.key.toLowerCase();
-              if (key === "z") {
-                event.preventDefault();
-                stepPreviewHistory(event.shiftKey ? 1 : -1);
-              } else if (key === "y") {
-                event.preventDefault();
-                stepPreviewHistory(1);
-              }
-            }}
             onScroll={(event) => {
               previewScrollTopRef.current = event.currentTarget.scrollTop;
             }}
