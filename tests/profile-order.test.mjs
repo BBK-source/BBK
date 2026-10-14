@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { isAvailabilityLine } from "../app/availability.js";
+import { isAvailabilityLine, normalizeAvailabilityTimes } from "../app/availability.js";
 import {
   countExpertsWithAvailability,
   reorderAvailabilityLines,
@@ -154,4 +154,31 @@ test("reports expert profiles that have no availability", () => {
 test("recognizes availability lines copied with a plain-text bullet", () => {
   assert.equal(isAvailabilityLine("• Thursday 08 October 3:00 PM - 6:30 PM"), true);
   assert.equal(isAvailabilityLine("- Friday 09 October 9:00 AM - 12:00 PM"), true);
+});
+
+test("can create a standalone availability list while retaining the full profile", () => {
+  const source = [
+    "View project online",
+    "#2.1 - First Expert",
+    "Profile introduction",
+    "Wednesday 14 October 10:00 PM - 11:00 PM",
+  ].join("\n");
+
+  const reordered = reorderAvailabilityLines(source, "availability", true);
+  assert.equal(reordered.match(/#2\.1 - First Expert/g)?.length, 2);
+  assert.equal(reordered.match(/Wednesday 14 October/g)?.length, 2);
+  assert.ok(reordered.indexOf("Wednesday 14 October") < reordered.indexOf("View project online"));
+  assert.ok(reordered.lastIndexOf("Wednesday 14 October") > reordered.indexOf("View project online"));
+});
+
+test("normalizes availability times to 24-hour format", () => {
+  assert.equal(
+    normalizeAvailabilityTimes("Wednesday 14 October 10:00 PM - 11:00 PM"),
+    "Wednesday 14 October 22:00 - 23:00",
+  );
+  assert.equal(
+    normalizeAvailabilityTimes("午前 9:00 - 午後 12:30"),
+    "09:00 - 12:30",
+  );
+  assert.equal(normalizeAvailabilityTimes("12:00 AM - 1:15 PM"), "00:00 - 13:15");
 });
