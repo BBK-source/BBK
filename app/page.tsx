@@ -20,6 +20,7 @@ import {
   normalizeCopiedText,
 } from "./structure.js";
 import { applyIntroTreatment } from "./intro-treatment.js";
+import { collapseQaParagraphLines } from "./qa-paragraphs.js";
 import {
   emphasizeAvailabilityTimes,
   isAvailabilityLine,
@@ -726,11 +727,13 @@ function formatText(
   const style = requestedStyle === "smart" ? detectStyle(text) : requestedStyle;
   const normalizedText: string = normalizeCopiedText(text);
   const sourceLines: string[] = normalizedText.split(/\r?\n/);
-  const lines: string[] = reorderAvailabilityLines(
-    normalizedText,
-    options.aboveLinksSection,
-    false,
-  ).split(/\r?\n/);
+  const lines: string[] = collapseQaParagraphLines(
+    reorderAvailabilityLines(
+      normalizedText,
+      options.aboveLinksSection,
+      false,
+    ).split(/\r?\n/),
+  );
   const expertCount = sourceLines.filter((line) => EXPERT_LINE_RE.test(line.trim())).length;
   let section: ProfileSection = "body";
   let qaFlow: QaRole = null;
