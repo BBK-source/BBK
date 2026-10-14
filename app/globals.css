@@ -37,9 +37,10 @@ main { min-height: 100vh; }
 .brand { display: flex; align-items: center; gap: 11px; font-weight: 780; font-size: 19px; letter-spacing: -.02em; }
 .brandMark {
   width: 34px; height: 34px; border-radius: 10px; display: block;
-  background: white url("/bbk-work-buddy.png") center / cover no-repeat;
+  overflow: hidden; background: white;
   box-shadow: 0 0 0 1px rgba(54, 95, 120, .14);
 }
+.brandMark img { width: 100%; height: 100%; display: block; object-fit: cover; }
 .headerHint { color: var(--muted); font-size: 13px; }
 .topActions { display: flex; align-items: center; gap: 18px; }
 .languageSwitch { padding: 3px; display: flex; gap: 2px; border: 1px solid #dce3e7; border-radius: 8px; background: #f6f8f9; }
@@ -95,30 +96,6 @@ h1 { margin: 0; font-size: clamp(32px, 3.2vw, 52px); letter-spacing: -.045em; li
   position: relative; flex: 0 0 auto; min-width: 300px; align-self: stretch;
   display: flex; align-items: flex-end; justify-content: flex-end;
 }
-.panelCameo {
-  height: 56px; display: flex; align-items: center; gap: 5px;
-  pointer-events: none; user-select: none; white-space: nowrap;
-}
-.panelCameo img {
-  flex: 0 0 auto; width: 72px; height: auto; display: block; opacity: .96;
-  transform: translateY(3px); filter: drop-shadow(0 4px 6px rgba(29,47,60,.1));
-}
-.cameoBubble {
-  position: relative; z-index: 2; padding: 4px 6px;
-  border: 1px solid #d8e2e8; border-radius: 10px; background: rgba(255,255,255,.97);
-  color: #41515c; font-size: 8px; font-weight: 720; line-height: 1.2;
-  box-shadow: 0 3px 8px rgba(34,56,70,.07); white-space: nowrap;
-}
-.cameoBubble::after {
-  content: ""; position: absolute; right: -4px; top: 50%; width: 7px; height: 7px;
-  border-top: 1px solid #d8e2e8; border-right: 1px solid #d8e2e8;
-  background: rgba(255,255,255,.97); transform: translateY(-50%) rotate(45deg);
-}
-.cameoBubbleOne { color: var(--blue-dark); }
-.cameoBubbleTwo::after {
-  left: -4px; right: auto; border-top: 0; border-right: 0;
-  border-left: 1px solid #d8e2e8; border-bottom: 1px solid #d8e2e8;
-}
 .steps {
   position: relative; z-index: 3; flex: 0 0 auto; display: flex; align-items: center; gap: 10px;
   color: #66717b; font-size: 11px; padding-bottom: 1px;
@@ -142,7 +119,6 @@ h1 { margin: 0; font-size: clamp(32px, 3.2vw, 52px); letter-spacing: -.045em; li
 }
 .panelHead > div { display: flex; align-items: center; gap: 10px; font-size: 14px; }
 .number { color: var(--blue); font: 700 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace; }
-.sourceActions { display: flex !important; align-items: center; gap: 9px !important; }
 .sourceUtilityBar {
   min-height: 48px; padding: 7px 14px; border-bottom: 1px solid var(--line);
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
@@ -436,17 +412,6 @@ h1 {
   color: var(--blue);
   font-size: 10px;
 }
-.panelCameo { height: 52px; }
-.panelCameo img { width: 64px; }
-.cameoBubble {
-  padding: 4px 6px;
-  border-color: rgba(29,29,31,.09);
-  border-radius: 9px;
-  color: #515154;
-  font-size: 7.5px;
-  font-weight: 600;
-  box-shadow: 0 3px 10px rgba(0,0,0,.06);
-}
 .sourceUtilityBar {
   min-height: 52px;
   padding: 8px 15px;
@@ -565,13 +530,13 @@ h1 {
   background: #e5e5ea;
 }
 .projectLeadBar {
-  min-height: 58px;
-  padding: 9px 15px;
+  min-height: 54px;
+  padding: 8px 15px;
   border-bottom: 1px solid var(--line);
   background: #fff;
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 10px;
 }
 .projectLeadLabel {
   min-width: 112px;
@@ -589,7 +554,7 @@ h1 {
   font-weight: 500;
 }
 .projectLeadSegments {
-  width: min(300px, 100%);
+  width: min(220px, 100%);
   padding: 3px;
   border-radius: 12px;
   background: #f2f2f7;
@@ -615,9 +580,12 @@ h1 {
   font-weight: 650;
   box-shadow: 0 1px 5px rgba(0,0,0,.12);
 }
+.summaryListButtons {
+  margin-left: auto; display: flex; align-items: center; gap: 6px;
+}
 .standaloneAvailabilityButton {
-  width: min(145px, 100%); height: 37px; margin-left: auto; padding: 0 12px;
-  border: 0; border-radius: 12px; background: #f2f2f7; color: var(--blue);
+  min-width: 72px; height: 31px; padding: 0 10px;
+  border: 0; border-radius: 10px; background: #f2f2f7; color: var(--blue);
   font-size: 10px; font-weight: 650; white-space: nowrap;
 }
 .standaloneAvailabilityButton:hover:not(:disabled) { background: #e8f2ff; }
@@ -644,7 +612,7 @@ h1 {
   background: #f2f2f7; color: #6e6e73; font-size: 19px; line-height: 1;
 }
 .availabilityListPreview {
-  min-height: 150px; max-height: 470px; margin: 16px 18px; padding: 14px;
+  min-height: 120px; max-height: 430px; margin: 14px 18px; padding: 12px;
   overflow: auto; outline: 0; border: 1px solid #d2d2d7; border-radius: 14px;
   background: #fff; font-family: Arial, "Noto Sans JP", "Noto Sans KR", sans-serif;
   font-size: 12px; line-height: 1.45; color: #171717;
@@ -752,7 +720,6 @@ footer {
 @media (max-width: 1160px) {
   .hero { min-height: 0; padding-top: 38px; padding-bottom: 28px; align-items: end; }
   .heroAside { flex-basis: auto; align-self: auto; }
-  .panelCameo { display: none; }
   .sponsorPoster { opacity: .34; }
 }
 
@@ -779,7 +746,8 @@ footer {
   .projectLeadBar { align-items: flex-start; flex-direction: column; gap: 7px; }
   .projectLeadLabel { min-width: 0; }
   .projectLeadSegments { width: 100%; }
-  .standaloneAvailabilityButton { width: 100%; margin-left: 0; }
+  .summaryListButtons { width: 100%; margin-left: 0; }
+  .standaloneAvailabilityButton { flex: 1; }
   .availabilityModalActions { align-items: stretch; flex-direction: column; }
   .availabilityCopyButton { width: 100%; }
 }

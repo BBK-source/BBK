@@ -4,6 +4,7 @@ import test from "node:test";
 import { isAvailabilityLine, normalizeAvailabilityTimes } from "../app/availability.js";
 import {
   buildAvailabilitySummary,
+  buildTitleSummary,
   countExpertsWithAvailability,
   reorderAvailabilityLines,
 } from "../app/profile-order.js";
@@ -201,4 +202,34 @@ test("builds a standalone title and availability-only list", () => {
   assert.match(summary, /#2\.2 - Second Expert/);
   assert.match(summary, /Thursday 15 October/);
   assert.doesNotMatch(summary, /introduction/i);
+});
+
+test("groups compact availability and title lists under their angles", () => {
+  const source = [
+    "10月14日 旅費交通費:",
+    "",
+    "#3.1 - Fukashi Andoh - Former Toyota manager",
+    "Long profile introduction that must not appear.",
+    "Availability:",
+    "Time Zone: (GMT+09:00)",
+    "Wednesday 14 October 5:00 PM - 9:00 PM",
+    "",
+    "9/15 PC調達:",
+    "",
+    "#3.4 - Daisuke YASUKAWA - Current Director at Hitachi Academy",
+    "Another long profile introduction.",
+    "Availability:",
+    "Time Zone: (GMT+09:00)",
+    "Thursday 15 October 8:00 PM - 12:00 AM",
+  ].join("\n");
+
+  const availability = buildAvailabilitySummary(source);
+  assert.match(availability, /10月14日 旅費交通費:\n#3\.1/);
+  assert.match(availability, /9\/15 PC調達:\n#3\.4/);
+  assert.doesNotMatch(availability, /Availability:|Time Zone:|introduction/i);
+
+  const titles = buildTitleSummary(source);
+  assert.match(titles, /10月14日 旅費交通費:\n•#3\.1/);
+  assert.match(titles, /9\/15 PC調達:\n•#3\.4/);
+  assert.doesNotMatch(titles, /Wednesday|Thursday|introduction/i);
 });

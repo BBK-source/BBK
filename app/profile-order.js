@@ -240,23 +240,60 @@ export function buildAvailabilitySummary(text) {
   const lines = projectLinksIndex >= 0 ? allLines.slice(projectLinksIndex + 1) : allLines;
   const summary = [];
   let index = 0;
+  let currentAngle = "";
+  let angleIncluded = false;
 
   while (index < lines.length) {
+    if (isAngleTitleLine(lines, index)) {
+      currentAngle = lines[index].trim();
+      angleIncluded = false;
+      index += 1;
+      continue;
+    }
     if (!isExpertLine(lines[index])) {
       index += 1;
       continue;
     }
     const end = expertBlockEnd(lines, index);
     const block = lines.slice(index, end);
-    const indexes = availabilityIndexes(block.slice(1));
-    if (indexes.size) {
+    const availability = block.slice(1).filter(isAvailabilityContent);
+    if (availability.length) {
       if (summary.length) summary.push("");
+      if (currentAngle && !angleIncluded) {
+        summary.push(currentAngle);
+        angleIncluded = true;
+      }
       summary.push(block[0]);
-      summary.push(...collapseBlankLines(trimBlankEdges(
-        block.slice(1).filter((_, lineIndex) => indexes.has(lineIndex)),
-      )));
+      summary.push(...availability);
     }
     index = end;
+  }
+
+  return summary.join("\n");
+}
+
+export function buildTitleSummary(text) {
+  const allLines = normalizeCopiedText(text).split(/\r?\n/);
+  const projectLinksIndex = allLines.findIndex(isProjectLinksStartLine);
+  const lines = projectLinksIndex >= 0 ? allLines.slice(projectLinksIndex + 1) : allLines;
+  const summary = [];
+  let currentAngle = "";
+  let angleIncluded = false;
+
+  for (let index = 0; index < lines.length; index += 1) {
+    if (isAngleTitleLine(lines, index)) {
+      currentAngle = lines[index].trim();
+      angleIncluded = false;
+      continue;
+    }
+    if (!isExpertLine(lines[index])) continue;
+
+    if (summary.length) summary.push("");
+    if (currentAngle && !angleIncluded) {
+      summary.push(currentAngle);
+      angleIncluded = true;
+    }
+    summary.push(`•${lines[index].trim().replace(/^[-•]\s*/, "")}`);
   }
 
   return summary.join("\n");
