@@ -298,3 +298,58 @@ export function buildTitleSummary(text) {
 
   return summary.join("\n");
 }
+
+function escapeHtml(value) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
+export function renderTitleSummaryHtml(text, style = "simple") {
+  const lines = normalizeCopiedText(text).split(/\r?\n/);
+  const groups = [];
+  let currentGroup = null;
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index].trim();
+    if (!line) continue;
+
+    if (isAngleTitleLine(lines, index)) {
+      currentGroup = { angle: line, titles: [] };
+      groups.push(currentGroup);
+      continue;
+    }
+
+    if (!isExpertLine(line)) continue;
+    if (!currentGroup) {
+      currentGroup = { angle: "", titles: [] };
+      groups.push(currentGroup);
+    }
+    currentGroup.titles.push(line.replace(/^[-•]\s*/, ""));
+  }
+
+  if (!groups.length) return "";
+
+  const markerStyle = style === "highlight"
+    ? "background-color:#fff0a8;padding:1px 2px;font-weight:700;box-decoration-break:clone;-webkit-box-decoration-break:clone"
+    : "font-weight:600";
+  const groupHtml = groups
+    .filter((group) => group.titles.length)
+    .map((group, groupIndex) => {
+      const angle = group.angle
+        ? `<div style="margin:0 0 5px;padding:${groupIndex ? "10px" : "0"} 0 5px;border-bottom:1px solid #e5e5ea;color:#1d1d1f;font-size:13px;font-weight:700">${escapeHtml(group.angle)}</div>`
+        : "";
+      const titles = group.titles.map((title) => (
+        `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin:0">` +
+        `<tr><td style="width:14px;padding:4px 0;vertical-align:top;color:#1d1d1f">•</td>` +
+        `<td style="padding:4px 0;vertical-align:top;color:#1d1d1f"><span style="${markerStyle}">${escapeHtml(title)}</span></td></tr></table>`
+      )).join("");
+      return `${angle}${titles}`;
+    })
+    .join("");
+
+  return groupHtml
+    ? `<div style="font-family:Arial,'Noto Sans JP','Noto Sans KR',sans-serif;font-size:12px;line-height:1.45;color:#1d1d1f">${groupHtml}</div>`
+    : "";
+}

@@ -6,6 +6,7 @@ import {
   buildAvailabilitySummary,
   buildTitleSummary,
   countExpertsWithAvailability,
+  renderTitleSummaryHtml,
   reorderAvailabilityLines,
 } from "../app/profile-order.js";
 
@@ -232,4 +233,24 @@ test("groups compact availability and title lists under their angles", () => {
   assert.match(titles, /10月14日 旅費交通費:\n•#3\.1/);
   assert.match(titles, /9\/15 PC調達:\n•#3\.4/);
   assert.doesNotMatch(titles, /Wednesday|Thursday|introduction/i);
+});
+
+test("renders title lists in selectable simple and highlighter styles", () => {
+  const summary = [
+    "10月14日 旅費交通費:",
+    "•#3.1 - Fukashi Andoh - Former Toyota manager",
+    "•#3.2 - Makoto Shibamoto - Current Deputy Director",
+  ].join("\n");
+
+  const simple = renderTitleSummaryHtml(summary, "simple");
+  assert.match(simple, /10月14日 旅費交通費:/);
+  assert.match(simple, /#3\.1 - Fukashi Andoh/);
+  assert.match(simple, /font-weight:600/);
+  assert.doesNotMatch(simple, /background-color:#fff0a8/);
+  assert.doesNotMatch(simple, /dotted/);
+
+  const highlighted = renderTitleSummaryHtml(summary, "highlight");
+  assert.match(highlighted, /background-color:#fff0a8/);
+  assert.match(highlighted, /#3\.2 - Makoto Shibamoto/);
+  assert.doesNotMatch(highlighted, /dotted/);
 });
