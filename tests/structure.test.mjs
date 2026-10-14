@@ -3,10 +3,13 @@ import test from "node:test";
 
 import {
   ANSWER_PREFIX_RE,
+  EXPERT_LINE_RE,
   QUESTION_PREFIX_RE,
   classifyProfileSections,
   isExpertLine,
+  isQaTopicHeading,
   isQuestionStart,
+  normalizeCopiedText,
 } from "../app/structure.js";
 
 test("recognizes grouped screening question labels", () => {
@@ -80,4 +83,26 @@ test("recognizes recommended expert headings from the project page", () => {
     "推奨 #4.2 - 山田太郎 - 元部長",
     "추천 #5.1 - 홍길동 - 전 이사",
   ].forEach((value) => assert.equal(isExpertLine(value), true, value));
+});
+
+test("recognizes Japanese unnumbered and circled screening questions", () => {
+  assert.equal(QUESTION_PREFIX_RE.test("Q質問"), true);
+  assert.equal(QUESTION_PREFIX_RE.test("o 質問"), true);
+  assert.equal(QUESTION_PREFIX_RE.test("① 事務用PCの調達・仕様策定について"), true);
+  assert.equal(ANSWER_PREFIX_RE.test("A:規定変更時の周知徹底"), true);
+  assert.equal(isQaTopicHeading("· OA機器 (PC)", "Q質問"), true);
+});
+
+test("normalizes markdown table wrappers before structure detection", () => {
+  const normalized = normalizeCopiedText([
+    "| **#3.1 - Fukashi Andoh - ✅元トヨタ** |",
+    "| ------------------------------------------ |",
+    "| <br>**Availability:**<br><br>**Time Zone: (GMT+09:00)** |",
+  ].join("\n"));
+  const lines = normalized.split("\n");
+
+  assert.equal(EXPERT_LINE_RE.test(lines[0]), true);
+  assert.equal(lines.includes("Availability:"), true);
+  assert.equal(lines.includes("Time Zone: (GMT+09:00)"), true);
+  assert.equal(normalized.includes("---"), false);
 });
