@@ -633,7 +633,7 @@ function formatLine(
     );
     const body = emphasizeCompanies(rawBody, style, palette, options.entityHighlights, options.emphasisVariant);
     const bg = style === "qa" ? colors.soft : style === "list" ? "#f6f8f9" : "transparent";
-    const margin = qaStart ? (style === "qa" ? "margin-top:7px;" : "margin-top:4px;") : "";
+    const margin = qaStart ? (style === "qa" ? "margin-top:3px;" : "margin-top:2px;") : "";
     const padding = style === "qa" ? (qaStart ? "5px 6px" : "1px 6px 4px") : style === "list" ? "3px 5px" : "2px 5px";
     const border = style === "minimal" ? "#9aa5ad" : colors.accent;
     const extra = style === "qa"

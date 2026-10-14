@@ -129,3 +129,37 @@ test("does not infer an answer when the next block is a new section", () => {
 
   assert.deepEqual(inferImplicitAnswerPrefixes(lines), lines);
 });
+
+test("keeps circled subtopics inside their main question card", () => {
+  const lines = [
+    "Q. 原価管理はどのような目的で活用されていましたか？",
+    "",
+    "① バランシンググループにおける電力の卸",
+    "",
+    "② 相対電源での電力卸",
+    "",
+    "③ 小売電気事業者における電気料金メニューの策定",
+    "",
+    "④ 他電源の調達",
+    "",
+    "Q. 会社全体ではどのようなプロセスでしたか？",
+    "A: 営業部門や経営企画が関与していました。",
+  ];
+
+  assert.deepEqual(collapseQaParagraphLines(lines), [
+    "Q. 原価管理はどのような目的で活用されていましたか？ ① バランシンググループにおける電力の卸 ② 相対電源での電力卸 ③ 小売電気事業者における電気料金メニューの策定 ④ 他電源の調達",
+    "Q. 会社全体ではどのようなプロセスでしたか？",
+    "A: 営業部門や経営企画が関与していました。",
+  ]);
+});
+
+test("keeps separately answered circled questions as separate cards", () => {
+  const lines = [
+    "① 最初の質問ですか？",
+    "A: 最初の回答です。",
+    "② 次の質問ですか？",
+    "A: 次の回答です。",
+  ];
+
+  assert.deepEqual(collapseQaParagraphLines(lines), lines);
+});

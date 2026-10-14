@@ -38,6 +38,8 @@ function isExplicitQaTopicHeading(value, nextNonBlank) {
     && isQaTopicHeading(value, nextNonBlank);
 }
 
+const CIRCLED_QUESTION_RE = /^[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳]\s*/;
+
 function isSectionBoundary(lines, index, nextNonBlank) {
   const value = lines[index].trim();
   return isScreenedHeading(value)
@@ -111,11 +113,24 @@ export function collapseQaParagraphLines(sourceLines) {
     if (!value) {
       if (activeRole === "answer") continue;
       if (activeRole === "question") {
+        // Circled items commonly list examples or subtopics under one main
+        // question. Blank rows copied from the source table must not split
+        // each item into a separate colored card.
+        if (CIRCLED_QUESTION_RE.test(nextNonBlank)) continue;
         const answerFollows = ANSWER_PREFIX_RE.test(nextNonBlank)
           || ARROW_ANSWER_RE.test(nextNonBlank);
+        const afterNextIndex = nextIndex >= 0
+          ? nextNonBlankLineIndex(lines, nextIndex)
+          : -1;
+        const afterNextNonBlank = afterNextIndex >= 0
+          ? lines[afterNextIndex].trim()
+          : "";
+        const questionFollows = isQuestionStart(nextNonBlank, afterNextNonBlank);
         flushParagraph();
         activeRole = null;
-        if (!answerFollows && output.at(-1) !== "") output.push("");
+        if (!answerFollows && !questionFollows && output.at(-1) !== "") {
+          output.push("");
+        }
         continue;
       }
       if (output.at(-1) !== "") output.push("");
@@ -124,6 +139,11 @@ export function collapseQaParagraphLines(sourceLines) {
 
     const startsQuestion = isQuestionStart(value, nextNonBlank);
     const startsAnswer = ANSWER_PREFIX_RE.test(value) || ARROW_ANSWER_RE.test(value);
+
+    if (activeRole === "question" && CIRCLED_QUESTION_RE.test(value)) {
+      paragraphLines.push(value);
+      continue;
+    }
 
     if (startsQuestion) {
       flushParagraph();
