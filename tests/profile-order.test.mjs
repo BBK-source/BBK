@@ -3,6 +3,7 @@ import test from "node:test";
 
 import { isAvailabilityLine, normalizeAvailabilityTimes } from "../app/availability.js";
 import {
+  buildAvailabilitySummary,
   countExpertsWithAvailability,
   reorderAvailabilityLines,
 } from "../app/profile-order.js";
@@ -181,4 +182,23 @@ test("normalizes availability times to 24-hour format", () => {
     "09:00 - 12:30",
   );
   assert.equal(normalizeAvailabilityTimes("12:00 AM - 1:15 PM"), "00:00 - 13:15");
+});
+
+test("builds a standalone title and availability-only list", () => {
+  const source = [
+    "View project online",
+    "#2.1 - First Expert",
+    "Profile introduction that must not appear in the list.",
+    "Wednesday 14 October 10:00 PM - 11:00 PM",
+    "#2.2 - Second Expert",
+    "Second introduction.",
+    "Thursday 15 October 9:00 AM - 12:00 PM",
+  ].join("\n");
+
+  const summary = buildAvailabilitySummary(source);
+  assert.match(summary, /#2\.1 - First Expert/);
+  assert.match(summary, /Wednesday 14 October/);
+  assert.match(summary, /#2\.2 - Second Expert/);
+  assert.match(summary, /Thursday 15 October/);
+  assert.doesNotMatch(summary, /introduction/i);
 });
