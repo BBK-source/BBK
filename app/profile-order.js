@@ -2,6 +2,7 @@ import {
   classifyProfileSections,
   isAvailabilityHeading,
   isExpertLine,
+  normalizeCopiedText,
 } from "./structure.js";
 import {
   isAvailabilityLine,
@@ -146,7 +147,7 @@ function expertBlockEnd(lines, start) {
 }
 
 export function reorderAvailabilityLines(text, section = "availability", keepOriginal = false) {
-  const lines = text.split(/\r?\n/);
+  const lines = normalizeCopiedText(text).split(/\r?\n/);
   const projectLinksIndex = lines.findIndex(isProjectLinksStartLine);
 
   // If the copied email already contains a title + availability block above
@@ -216,7 +217,7 @@ export function reorderAvailabilityLines(text, section = "availability", keepOri
 }
 
 export function countExpertsWithAvailability(text) {
-  const lines = text.split(/\r?\n/);
+  const lines = normalizeCopiedText(text).split(/\r?\n/);
   let experts = 0;
   let withAvailability = 0;
 
@@ -234,7 +235,7 @@ export function countExpertsWithAvailability(text) {
 }
 
 export function buildAvailabilitySummary(text) {
-  const allLines = text.split(/\r?\n/);
+  const allLines = normalizeCopiedText(text).split(/\r?\n/);
   const projectLinksIndex = allLines.findIndex(isProjectLinksStartLine);
   const lines = projectLinksIndex >= 0 ? allLines.slice(projectLinksIndex + 1) : allLines;
   const summary = [];
