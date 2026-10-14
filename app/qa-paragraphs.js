@@ -33,10 +33,13 @@ function joinParagraphLines(lines) {
   }, "");
 }
 
+function isExplicitQaTopicHeading(value, nextNonBlank) {
+  return /^[·•▪◦]\s*\S/.test(value)
+    && isQaTopicHeading(value, nextNonBlank);
+}
+
 function isSectionBoundary(lines, index, nextNonBlank) {
   const value = lines[index].trim();
-  const qaTopicHeading = isQaTopicHeading(value, nextNonBlank)
-    && (/^[·•▪◦]\s*/.test(value) || (!/[.。!?？！]$/.test(value) && value.length <= 40));
   return isScreenedHeading(value)
     || isEmploymentHeading(value)
     || isAvailabilityHeading(value)
@@ -45,7 +48,10 @@ function isSectionBoundary(lines, index, nextNonBlank) {
     || isTimeZoneLine(value)
     || EXPERT_LINE_RE.test(value)
     || /^Book Now$/i.test(value)
-    || qaTopicHeading
+    // While a Q or A is active, an unmarked sentence immediately before the
+    // next question is still part of the current paragraph. Only an explicit
+    // bullet can introduce a new Q&A topic at this point.
+    || isExplicitQaTopicHeading(value, nextNonBlank)
     || (/[:：]\s*$/.test(value) && EXPERT_LINE_RE.test(nextNonBlank));
 }
 

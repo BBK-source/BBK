@@ -44,3 +44,41 @@ test("joins Japanese answer lines without inserting artificial spaces", () => {
     "Wednesday 14 October 17:00 - 21:00",
   ]);
 });
+
+test("keeps the final answer sentence before the next numbered question", () => {
+  const lines = [
+    "① 海外拠点を含めた標準仕様の意思決定のベストプラクティス",
+    "A: 本社と海外拠点で候補構成を検証します。",
+    "現地調達価格と保守体制も含めて判断します",
+    "② 実施すべき検証と評価項目",
+    "A: OSと業務アプリの条件を分けて比較します。",
+    "評価結果を本社と拠点で確認します",
+    "③ 更新時の運用方法",
+  ];
+
+  assert.deepEqual(collapseQaParagraphLines(lines), [
+    "① 海外拠点を含めた標準仕様の意思決定のベストプラクティス",
+    "A: 本社と海外拠点で候補構成を検証します。現地調達価格と保守体制も含めて判断します",
+    "② 実施すべき検証と評価項目",
+    "A: OSと業務アプリの条件を分けて比較します。評価結果を本社と拠点で確認します",
+    "③ 更新時の運用方法",
+  ]);
+});
+
+test("preserves an explicitly bulleted Q&A topic boundary", () => {
+  const lines = [
+    "Q1: 規程変更時の周知方法は？",
+    "A1: 管理職経由で説明します。",
+    "· OA機器 (PC)",
+    "Q2: 標準仕様はどのように決めますか？",
+    "A2: 本社と各拠点で決定します。",
+  ];
+
+  assert.deepEqual(collapseQaParagraphLines(lines), [
+    "Q1: 規程変更時の周知方法は？",
+    "A1: 管理職経由で説明します。",
+    "· OA機器 (PC)",
+    "Q2: 標準仕様はどのように決めますか？",
+    "A2: 本社と各拠点で決定します。",
+  ]);
+});

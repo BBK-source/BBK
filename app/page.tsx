@@ -965,7 +965,9 @@ function formatText(
     let qaRole: QaRole = null;
     let qaStart = false;
 
-    if (isQaTopicHeading(trimmed, nextNonBlank)) {
+    const qaTopicHeading = isQaTopicHeading(trimmed, nextNonBlank);
+    const explicitQaTopicHeading = qaTopicHeading && /^[·•▪◦]\s*\S/.test(trimmed);
+    if (qaTopicHeading && (!qaFlow || explicitQaTopicHeading)) {
       section = "qa";
       qaFlow = null;
     }
