@@ -617,14 +617,52 @@ h1 {
   font-weight: 650;
   box-shadow: 0 1px 5px rgba(0,0,0,.12);
 }
-.standaloneAvailabilityOption {
-  display: inline-flex; align-items: center; gap: 7px; margin-left: auto;
-  color: #515154; font-size: 10px; white-space: nowrap; cursor: pointer;
+.standaloneAvailabilityButton {
+  width: min(145px, 100%); height: 37px; margin-left: auto; padding: 0 12px;
+  border: 0; border-radius: 12px; background: #f2f2f7; color: var(--blue);
+  font-size: 10px; font-weight: 650; white-space: nowrap;
 }
-.standaloneAvailabilityOption input {
-  width: 15px; height: 15px; margin: 0; accent-color: var(--blue); cursor: pointer;
+.standaloneAvailabilityButton:hover:not(:disabled) { background: #e8f2ff; }
+.standaloneAvailabilityButton:disabled { color: #aeaeb2; cursor: default; }
+
+.availabilityModalBackdrop {
+  position: fixed; z-index: 100; inset: 0; padding: 24px;
+  display: grid; place-items: center; background: rgba(0,0,0,.24);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
 }
-.standaloneAvailabilityOption:has(input:disabled) { opacity: .38; cursor: default; }
+.availabilityModal {
+  width: min(620px, 100%); max-height: min(720px, 88vh); overflow: hidden;
+  display: flex; flex-direction: column; border: 1px solid rgba(29,29,31,.09);
+  border-radius: 22px; background: #fff; box-shadow: 0 28px 80px rgba(0,0,0,.22);
+}
+.availabilityModalHead {
+  padding: 18px 20px 14px; display: flex; align-items: flex-start; justify-content: space-between; gap: 18px;
+  border-bottom: 1px solid var(--line);
+}
+.availabilityModalHead h2 { margin: 0; font-size: 17px; font-weight: 680; letter-spacing: -.02em; }
+.availabilityModalHead p { margin: 5px 0 0; color: #86868b; font-size: 11px; }
+.availabilityModalClose {
+  flex: 0 0 auto; width: 30px; height: 30px; padding: 0; border: 0; border-radius: 50%;
+  background: #f2f2f7; color: #6e6e73; font-size: 19px; line-height: 1;
+}
+.availabilityListPreview {
+  min-height: 150px; max-height: 470px; margin: 16px 18px; padding: 14px;
+  overflow: auto; outline: 0; border: 1px solid #d2d2d7; border-radius: 14px;
+  background: #fff; font-family: Arial, "Noto Sans JP", "Noto Sans KR", sans-serif;
+  font-size: 12px; line-height: 1.45; color: #171717;
+}
+.availabilityListPreview:focus { border-color: #8ab8ee; box-shadow: 0 0 0 3px rgba(0,113,227,.1); }
+.availabilityModalActions {
+  padding: 13px 18px 17px; display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  border-top: 1px solid var(--line); background: #fbfbfd;
+}
+.includeAvailabilityOption { display: flex; align-items: center; gap: 8px; color: #515154; font-size: 11px; cursor: pointer; }
+.includeAvailabilityOption input { width: 16px; height: 16px; margin: 0; accent-color: var(--blue); }
+.availabilityCopyButton {
+  min-height: 36px; padding: 0 16px; border: 0; border-radius: 999px;
+  background: var(--blue); color: #fff; font-size: 11px; font-weight: 650;
+}
+.availabilityCopyButton:hover { background: var(--blue-dark); }
 .optionBar {
   min-height: 50px;
   padding: 8px 15px;
@@ -743,6 +781,9 @@ footer {
   .projectLeadBar { align-items: flex-start; flex-direction: column; gap: 7px; }
   .projectLeadLabel { min-width: 0; }
   .projectLeadSegments { width: 100%; }
+  .standaloneAvailabilityButton { width: 100%; margin-left: 0; }
+  .availabilityModalActions { align-items: stretch; flex-direction: column; }
+  .availabilityCopyButton { width: 100%; }
 }
 
 @media (max-width: 420px) {
