@@ -47,3 +47,17 @@ export function emphasizeAvailabilityTimes(html) {
     (time) => `<strong style="font-weight:800">${time}</strong>`,
   );
 }
+
+export function normalizeAvailabilityTimes(line) {
+  return line.replace(
+    /(?:(上午|下午|早上|晚上|午前|午後)\s*)?((?:0?\d|1\d|2[0-3]))[:：](\d{2})(?:\s*(AM|PM))?/gi,
+    (match, periodPrefix, hourText, minute, periodSuffix) => {
+      const period = (periodSuffix || periodPrefix || "").toUpperCase();
+      let hour = Number(hourText);
+      if (["PM", "下午", "晚上", "午後"].includes(period) && hour < 12) hour += 12;
+      if (["AM", "上午", "早上", "午前"].includes(period) && hour === 12) hour = 0;
+      if (!period && hour > 23) return match;
+      return `${String(hour).padStart(2, "0")}:${minute}`;
+    },
+  );
+}
