@@ -65,6 +65,28 @@ export function inferImplicitAnswerPrefixes(sourceLines) {
     const nextIndex = nextNonBlankLineIndex(lines, index);
     const nextNonBlank = nextIndex >= 0 ? lines[nextIndex].trim() : "";
 
+    // Some exports use a short circled-number heading as the question and put
+    // the answer directly on the next line without an A: label. Treat only an
+    // immediately adjacent plain line as the answer. Circled subtopics that
+    // are separated by blank rows therefore remain part of their parent Q.
+    if (
+      CIRCLED_QUESTION_RE.test(value)
+      && nextIndex === index + 1
+      && nextNonBlank
+      && !ANSWER_PREFIX_RE.test(nextNonBlank)
+      && !ARROW_ANSWER_RE.test(nextNonBlank)
+    ) {
+      const afterIndex = nextNonBlankLineIndex(lines, nextIndex);
+      const afterCandidate = afterIndex >= 0 ? lines[afterIndex].trim() : "";
+      if (
+        !isQuestionStart(nextNonBlank, afterCandidate)
+        && !isSectionBoundary(lines, nextIndex, afterCandidate)
+      ) {
+        lines[nextIndex] = `${lines[nextIndex].match(/^\s*/)?.[0] ?? ""}A: ${nextNonBlank}`;
+        continue;
+      }
+    }
+
     // Some profile exports omit A:/>> entirely and separate the answer from
     // the completed question with a blank line. Add a neutral answer marker
     // so the existing Q&A formatter and diagnostics can treat it correctly.

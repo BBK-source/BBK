@@ -163,3 +163,29 @@ test("keeps separately answered circled questions as separate cards", () => {
 
   assert.deepEqual(collapseQaParagraphLines(lines), lines);
 });
+
+test("infers answers placed directly below circled question headings", () => {
+  const lines = [
+    "[Screened 2026-10-26]",
+    "① 経験領域・役割・規模",
+    "建設×データセンター、環境設備建設に対応可能です。案件の技術管理を担当しました。",
+    "",
+    "② 今後の需要動向",
+    "AI・クラウド需要の拡大に伴い、DCの新設・増設需要は増加すると考えます。",
+    "",
+    "③ 受注に重要な要件",
+    "品質、安全性、技術力、施工実績、納期遵守が特に重要です。",
+    "Employment History:",
+  ];
+
+  assert.deepEqual(collapseQaParagraphLines(lines), [
+    "[Screened 2026-10-26]",
+    "① 経験領域・役割・規模",
+    "A: 建設×データセンター、環境設備建設に対応可能です。案件の技術管理を担当しました。",
+    "② 今後の需要動向",
+    "A: AI・クラウド需要の拡大に伴い、DCの新設・増設需要は増加すると考えます。",
+    "③ 受注に重要な要件",
+    "A: 品質、安全性、技術力、施工実績、納期遵守が特に重要です。",
+    "Employment History:",
+  ]);
+});
