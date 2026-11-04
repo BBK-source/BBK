@@ -8,13 +8,15 @@
 <style>
 :root{font-family:Arial,"Yu Gothic","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;color:#18212b;background:#f7f8fa;font-size:14px}
 *{box-sizing:border-box}body{margin:0}header{background:#fff;border-bottom:1px solid #dce1e7;padding:17px max(22px,calc((100vw - 1360px)/2))}h1{font-size:19px;font-weight:650;margin:0 0 7px}p{margin:6px 0}.sub,.hint,.fine{color:#637182;font-size:12px;line-height:1.65}.wrap{max-width:1360px;padding:22px;margin:auto}h2{font-size:15px;margin:0 0 14px}.panel{background:#fff;border:1px solid #dce1e7;border-radius:7px;padding:19px;margin-bottom:16px}.two{display:grid;grid-template-columns:minmax(340px,1fr) minmax(340px,1fr);gap:16px}.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:11px}.btn{font:inherit;border:1px solid #c4cbd4;background:#fff;color:#202a37;border-radius:5px;padding:9px 13px;cursor:pointer}.btn:hover{background:#f0f3f6}.btn.primary{background:#24364c;color:white;border-color:#24364c}.btn.primary:hover{background:#344d67}.btn.danger{color:#aa2732}.btn.small{padding:6px 9px;font-size:12px}.input,textarea,select{font:inherit;color:#1b2530;border:1px solid #cbd3dd;border-radius:5px;padding:8px 10px;background:#fff;width:100%}textarea{resize:vertical;line-height:1.5;min-height:80px}#source{height:255px;min-height:170px;font-size:13px}label{display:block;font-size:12px;font-weight:600;color:#465367;margin-bottom:6px}.row{display:flex;gap:10px;align-items:center}.muted{color:#687586}.meta{font-size:12px}.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}.tab{border:1px solid #cfd5dd;border-radius:5px;padding:9px 12px;cursor:pointer;background:#fff;font:inherit}.tab.selected{background:#ecf0f5;border-color:#697d94;font-weight:600}.count{background:#e8edf1;border-radius:30px;padding:1px 6px;margin-left:5px;font-size:11px}.tablewrap{width:100%;overflow:auto;border:1px solid #e0e4e9;border-radius:4px}table{border-collapse:collapse;min-width:1090px;width:100%}th{background:#eef1f4;text-align:left;font-weight:600;font-size:12px;white-space:nowrap;padding:10px 9px;border-bottom:1px solid #d0d5da}td{padding:10px 9px;border-bottom:1px solid #e2e6eb;vertical-align:top;font-size:12px}tr:hover td{background:#fafbfc}td.name{min-width:150px;font-weight:650}td.sector{min-width:170px}td.snippet{min-width:110px;max-width:210px;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere}td.price{white-space:nowrap}.warning{color:#a44600;font-size:12px}.okay{color:#216744;font-size:12px}.status{margin:8px 0 0;min-height:16px;font-size:12px;color:#4b596a}.editor{display:none;margin-top:16px;padding:18px;background:#f9fafb;border:1px solid #dce1e7;border-radius:6px}.editor.open{display:block}.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.formgrid .wide{grid-column:span 2}.editor textarea{min-height:100px}.editor textarea.long{min-height:170px}.hide{display:none!important}.sheetline{display:grid;grid-template-columns:minmax(175px,33%) 1fr auto;gap:9px;align-items:end;margin:10px 0}.sheetline .btn{height:36px}.minor{border-top:1px solid #e5e9ef;margin-top:14px;padding-top:14px}.help{display:block;color:#7b8591;font-size:11px;margin-top:4px}@media(max-width:820px){.two{grid-template-columns:1fr}.formgrid{grid-template-columns:1fr}.formgrid .wide{grid-column:span 1}.wrap{padding:12px}header{padding:15px}.sheetline{grid-template-columns:1fr 1fr auto}}
+#projectConfig,#addManual{display:none!important}
+@media(max-width:1000px){.two{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-<header><h1>エキスパート情報 → Excel 変換ツール</h1><div class="sub">Third Bridgeのプロフィール原文を貼り付けるだけで、必要項目を抽出し、案件ごとのシートにまとめてExcel出力します。</div></header>
+<header><h1>エキスパート情報 → Excel 変換ツール</h1><div class="sub">Profileを貼り付けるだけ。4分野に自動分類し、Excelに出力します。分類はあとから変更できます。</div></header>
 <main class="wrap">
-<section class="panel">
- <div class="row" style="justify-content:space-between;flex-wrap:wrap"><h2 style="margin:0">1. 案件・シート設定</h2><button class="btn small" id="newProject">新しい案件を開始</button></div>
+<section class="panel" id="projectConfig" hidden>
+ <div class="row" style="justify-content:space-between;flex-wrap:wrap"><h2 style="margin:0">案件・シート設定</h2><button class="btn small" id="newProject">新しい案件を開始</button></div>
  <div style="margin-top:15px"><label for="projectName">案件名（任意／Excelファイル名に使用）</label><input id="projectName" class="input" placeholder="例：4分野におけるスキル標準整備"></div>
  <div class="minor"><div class="row" style="justify-content:space-between;flex-wrap:wrap"><label style="margin:0">Excelシート名・自動振り分けキーワード</label><span class="fine">シートの数・名称は案件ごとに自由に変更できます。</span></div>
   <div id="sheetList"></div>
@@ -24,28 +26,28 @@
 </section>
 <section class="two">
  <div class="panel">
-  <h2>2. エキスパートのProfileを貼り付け</h2>
-  <label for="source">1名でも複数名でも貼り付け可能。職歴・スクリーニング回答・単価・アベイラビリティを含む原文を推奨します。</label>
+  <h2>1. Profileを貼り付け</h2>
+  <label for="source">1名でも複数名でもOK。職歴・Q&A・単価・アベイラビリティを含むProfile原文を貼り付けてください。</label>
   <textarea id="source" spellcheck="false" placeholder="Third Bridge、Slack、メール等から専門家のProfileを貼り付けてください。\n\n例：\n#2.1 - Expert Name - ✅ Current R&D Director at ABC\n経験の概要……\nQ1. ……\nA1. ……\nEmployment History:\nJan 2024 - Present | ABC | Director\nAvailability:\nMonday 09 November 9:00 PM - 11:30 PM\nHourly Fee: USD1780.00"></textarea>
   <div class="controls"><button class="btn primary" id="parse">解析して追加</button><button class="btn" id="clearInput">入力欄をクリア</button><span class="fine" id="parseInfo"></span></div>
   <p class="fine">解析とExcel作成はこのブラウザ内で完結します。入力した原文はGitHubに送信されません。原文の文章を書き換えず、コピー時のHTMLタグや表の罫線などを整理します。</p>
  </div>
  <div class="panel">
-  <h2>3. Excel出力・データ管理</h2>
-  <p id="exportInfo">シート数：1 ／ 項目数：7</p>
+  <h2>2. Excelを出力</h2>
+  <p id="exportInfo">4分野 ／ Excel列：7項目</p>
   <p class="fine">Excel列：Expert名（or ID）、職歴、ご経験、スクリーニング質問への回答、単価、アベイラビリティ、その他特記事項</p>
-  <div class="controls" style="margin-top:19px"><button class="btn primary" id="exportXlsx">Excelをダウンロード (.xlsx)</button><button class="btn" id="backup">JSONバックアップ</button><button class="btn" id="restore">バックアップを復元</button><input id="restoreInput" class="hide" type="file" accept=".json,application/json"></div>
-  <p class="fine" style="margin-top:16px">内容はこのブラウザのローカルストレージに自動保存され、他の端末とは同期されません。共用端末での利用にご注意ください。別案件に切り替える場合は「新しい案件を開始」を選んでください。必要なら事前にJSONでバックアップしてください。</p>
-  <div class="controls"><button class="btn danger small" id="reset">この案件の専門家を全件削除</button></div>
+  <div class="controls" style="margin-top:19px"><button class="btn primary" id="exportXlsx">Excelをダウンロード (.xlsx)</button><button class="btn hide" id="backup">JSONバックアップ</button><button class="btn hide" id="restore">バックアップを復元</button><input id="restoreInput" class="hide" type="file" accept=".json,application/json"></div>
+  <p class="fine" style="margin-top:16px">データはこのブラウザにのみ自動保存されます。他の端末とは同期されません。別の案件で使うときは、必要なExcelを保存してから下の「一覧をクリア」を押してください。</p>
+  <div class="controls"><button class="btn danger small" id="reset">一覧をクリア</button></div>
   <p id="globalStatus" class="status"></p>
  </div>
 </section>
 <section class="panel">
- <div class="row" style="justify-content:space-between;flex-wrap:wrap"><h2 style="margin:0">4. エキスパート一覧（出力前に編集可能）</h2><span id="summary" class="meta muted"></span></div>
+ <div class="row" style="justify-content:space-between;flex-wrap:wrap"><h2 style="margin:0">3. エキスパート一覧</h2><span id="summary" class="meta muted"></span></div>
  <div class="tabs" id="tabs"></div>
- <p class="hint" style="margin-bottom:11px">自動分類は確認用です。必要に応じてシートを変更してください。表内はプレビュー表示です。「編集」から全項目を確認できます。</p>
+ <p class="hint" style="margin-bottom:11px">「AI・ロボティクス」「建設」「創薬・先端医療」「合成生物学・バイオ」の4分野に自動分類します。違う場合は「シート」のプルダウンで移動できます。</p>
  <div class="tablewrap"><table><thead><tr><th>Expert名 (or ID)</th><th>シート</th><th>職歴</th><th>ご経験</th><th>スクリーニング回答</th><th>単価</th><th>アベイラビリティ</th><th>確認</th><th>操作</th></tr></thead><tbody id="rows"></tbody></table></div>
- <div class="controls"><button class="btn small" id="addManual">＋ 手動で追加</button></div>
+ <div class="controls hide"><button class="btn small" id="addManual">＋ 手動で追加</button></div>
  <div class="editor" id="editor">
   <div class="row" style="justify-content:space-between;margin-bottom:14px"><h2 style="margin:0" id="editorTitle">エキスパート情報の編集</h2><button class="btn small" id="closeEditor">閉じる</button></div>
   <div class="formgrid">
@@ -109,16 +111,24 @@ function parseSingle(section){let raw=normalizeText(section.body);let lines=raw.
  let sector=inferSector([head?.full||'',experience,history,qa].join('\n'));
  return {name,history,experience,qa,fee,availability,notes,sector,status:sector?'自动识别':'待分类',raw:section.header+'\n'+section.body};}
 function inferSector(text){
- if(sheets.length===1) return sheets[0].name;
  const t=String(text||'').toLowerCase();
- const score=sheets.map(s=>{
-   const kws=(s.keywords||'').split(/[,、，;；\n]+/).map(v=>v.trim().toLowerCase()).filter(Boolean);
-   // シート名そのものも補助キーワードとして使用する（汎用名は除く）
-   if(s.name&&!/^sheet\d+$|^エキスパート一覧$|^その他$/.test(s.name.toLowerCase()))kws.push(s.name.toLowerCase());
-   const hit=kws.reduce((n,k)=>n+(t.includes(k)?Math.min(5,t.split(k).length-1):0),0);
-   return {name:s.name,hit};
- }).sort((a,b)=>b.hit-a.hit);
- return score[0]?.hit>0 && (score.length===1 || score[0].hit>score[1].hit)?score[0].name:'';
+ // 名前・肩書・REの冒頭を優先。汎用的な「AI」「研究開発」だけでは分類しない。
+ const intro=t.slice(0,1400);
+ const rules=[
+  {name:'AI・ロボティクス', strong:[/robotics?/,/humanoid/,/physical\s*ai/,/embodied\s*ai/,/フィジカル\s*ai/,/ロボット/,/機器人/,/机器人/,/人形ロボ/,/人形机器人/,/具身智能/,/四足歩行/,/motion\s*control/,/運動制御/,/运动控制/,/vla\s*(?:model|モデル|算法|アルゴリズム)/,/unitree/,/galbot/,/agibot/,/ubtech/,/apptronik/,/宇樹/,/宇树/,/銀河通用/,/银河通用/,/智元机器人/,/優必選/,/优必选/], weak:[/ロボティクス/,/メカトロニクス/,/アクチュエータ/,/歩行制御/,/歩行アルゴリズム/,/sim2real/,/robot\s*foundation/]},
+  {name:'建設', strong:[/construction/,/architecture/,/architectural/,/civil\s*engineering/,/建設/,/建筑/,/建築/,/土木/,/施工/,/ゼネコン/,/工事/,/建造/,/建材/,/bim\b/,/大林組/,/清水建設/,/鹿島建設/,/大成建設/,/竹中工務店/,/obayashi/,/kajima/,/shimizu\s*corporation/,/taisei\s*corporation/], weak:[/構造設計/,/設備工事/,/設計監理/,/建築設計/,/都市開発/,/現場監督/,/工務店/,/建設dx/]},
+  {name:'創薬・先端医療', strong:[/創薬/,/新薬/,/製薬/,/医薬/,/治験/,/臨床試験/,/clinical\s*trial/,/drug\s*(?:discovery|development)/,/pharma/,/biopharma/,/抗体医薬/,/再生医療/,/先端医療/,/医療機器/,/細胞治療/,/遺伝子治療/,/薬物動態/,/drug\s*delivery/], weak:[/創薬研究/,/薬理/,/患者/,/clinical\s*development/,/臨床開発/,/oncology/,/medical\s*device/]},
+  {name:'合成生物学・バイオ', strong:[/合成生物/,/synthetic\s*biology/,/合成バイオ/,/biomanufacturing/,/bio\s*manufacturing/,/bioprocess/,/バイオものづくり/,/代謝工学/,/metabolic\s*engineering/,/遺伝子回路/,/酵素工学/,/タンパク質工学/,/細胞工場/,/菌株開発/,/微生物/,/発酵/,/fermentation/,/microbial/,/strain\s*engineering/,/シンセティックバイオ/], weak:[/biotech/,/biotechnology/,/バイオ/,/ゲノム編集/,/crispr/,/培養/,/バイオ生産/]}
+ ];
+ const results=rules.map(r=>{
+  let score=0;
+  for(const re of r.strong){if(re.test(t))score+=4;if(re.test(intro))score+=3;}
+  for(const re of r.weak){if(re.test(t))score+=1;if(re.test(intro))score+=1;}
+  return {name:r.name,score};
+ }).sort((a,b)=>b.score-a.score);
+ if(!results[0]||results[0].score<4)return '';
+ const gap=results[0].score-results[1].score;
+ return gap>=3&&results[0].score>=results[1].score*1.18?results[0].name:'';
 }
 function parseProfiles(raw){let text=String(raw||'').trim();if(!text)return [];return getRawSections(text).map(parseSingle).filter(r=>r.name||r.experience||r.history);}
 function dedupeKey(str){return String(str||'').replace(/^#\d+\.\d+\s*[-–—]\s*/,'').replace(/[^\p{L}\p{N}]/gu,'').toLowerCase()}
@@ -146,17 +156,17 @@ function zipStore(files){let encoder=new TextEncoder(),locals=[],centers=[],offs
 function buildXlsx(items,sheetNames){return zipStore(xlsxFiles(items,sheetNames));}
 
 /* CORE_END */
-const STORAGE='thirdbridge_expert_excel_jp_v1';
+const STORAGE='thirdbridge_expert_excel_jp_simple_v2';
 let entries=[];
-let sheets=[{name:'エキスパート一覧',keywords:''}];
+let sheets=[{name:'AI・ロボティクス',keywords:''},{name:'建設',keywords:''},{name:'創薬・先端医療',keywords:''},{name:'合成生物学・バイオ',keywords:''}];
 let projectName='';
 let active='ALL',editing=-1;
-const defaultSheets=()=>[{name:'エキスパート一覧',keywords:''}];
+const defaultSheets=()=>[{name:'AI・ロボティクス',keywords:''},{name:'建設',keywords:''},{name:'創薬・先端医療',keywords:''},{name:'合成生物学・バイオ',keywords:''}];
 function html(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function status(s){document.getElementById('globalStatus').textContent=s}
 function state(){return {version:2,projectName,sheets,entries}}
 function saveState(){try{localStorage.setItem(STORAGE,JSON.stringify(state()))}catch(err){status('この環境では自動保存できません。JSONバックアップをご利用ください。')}}
-function loadState(){try{let o=JSON.parse(localStorage.getItem(STORAGE)||'null');if(!o)return;if(Array.isArray(o.entries))entries=o.entries; if(Array.isArray(o.sheets)&&o.sheets.length)sheets=o.sheets; if(typeof o.projectName==='string')projectName=o.projectName}catch(err){status('保存データを読み込めませんでした。')}}
+function loadState(){try{let o=JSON.parse(localStorage.getItem(STORAGE)||'null');if(!o)return;if(Array.isArray(o.entries))entries=o.entries; sheets=defaultSheets(); if(typeof o.projectName==='string')projectName=o.projectName}catch(err){status('保存データを読み込めませんでした。')}}
 function known(name){return sheets.some(s=>s.name===name)}
 function validateName(name,exclude=-1){if(!name)return 'シート名を入力してください。';if(name.length>31)return 'シート名は31文字以内にしてください。';if(/[\\/?*\[\]:]/.test(name))return 'シート名に \\ / ? * [ ] : は使えません。';if(sheets.some((s,i)=>i!==exclude&&s.name.toLowerCase()===name.toLowerCase()))return '同じシート名は使用できません。';return ''}
 function renderSheets(){const area=document.getElementById('sheetList');area.innerHTML=sheets.map((s,i)=>`<div class="sheetline"><div><label>シート ${i+1}</label><input class="input" data-sheet-name="${i}" value="${html(s.name)}" aria-label="シート名 ${i+1}"></div><div><label>振り分けキーワード（任意）</label><input class="input" data-sheet-keys="${i}" value="${html(s.keywords||'')}" placeholder="例：Unitree、Galbot、ロボット"></div><button class="btn small" data-remove-sheet="${i}" ${sheets.length===1?'disabled':''}>削除</button></div>`).join('');
@@ -176,7 +186,7 @@ function renderAll(){renderSheets();render();document.getElementById('edit_secto
 function openEdit(idx){editing=idx;const e=entries[idx];if(!e)return;FIELDS.forEach(f=>{document.getElementById('edit_'+(f==='availability'?'avail':f)).value=e[f]||''});document.getElementById('edit_sector').innerHTML=options(e.sector);document.getElementById('editInfo').textContent='';document.getElementById('editorTitle').textContent='エキスパート情報の編集';document.getElementById('editor').classList.add('open');document.getElementById('editor').scrollIntoView({behavior:'smooth',block:'start'})}
 function closeEdit(){editing=-1;document.getElementById('editor').classList.remove('open')}
 function download(bytes,name,type){let blob=new Blob([bytes],{type});let link=document.createElement('a');let url=URL.createObjectURL(blob);link.href=url;link.download=name;document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),2000)}
-function exportName(){const d=new Date(),pad=n=>String(n).padStart(2,'0');let title=(projectName||'Expert_List').replace(/[\\/:*?"<>|\x00-\x1f]/g,'_').trim().slice(0,70)||'Expert_List';return title+'_Expert_List_'+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'.xlsx'}
+function exportName(){const d=new Date(),pad=n=>String(n).padStart(2,'0');return 'Expert_List_'+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'.xlsx'}
 document.getElementById('projectName').onchange=e=>{projectName=e.target.value.trim();saveState()};
 document.getElementById('addSheet').onclick=()=>{let n=sheets.length+1,name='Sheet'+n;while(known(name)){n++;name='Sheet'+n} sheets.push({name,keywords:''});saveState();renderAll()};
 document.getElementById('parse').onclick=()=>{const raw=document.getElementById('source').value.trim();if(!raw){document.getElementById('parseInfo').textContent='Profileを貼り付けてください。';return}let parsed=parseProfiles(raw),added=0,updated=0;for(let item of parsed){if(!known(item.sector))item.sector='';const idx=entries.findIndex(e=>dedupeKey(e.name)===dedupeKey(item.name));if(idx<0){entries.push(item);added++}else{const old=entries[idx];for(const f of FIELDS){if(item[f])old[f]=item[f]};old.raw=item.raw;old.sector=item.sector||old.sector;updated++}}saveState();renderAll();document.getElementById('parseInfo').textContent='解析 '+parsed.length+' 名 ／ 新規 '+added+' 名 ／ 更新 '+updated+' 名';if(parsed.length)document.getElementById('source').value='';status('解析が完了しました。抽出項目とシートをご確認ください。')};
@@ -188,7 +198,7 @@ document.getElementById('addManual').onclick=()=>{entries.push({name:'',sector:s
 document.getElementById('exportXlsx').onclick=()=>{if(!entries.length&&!confirm('専門家が0名です。ヘッダーのみのExcelを出力しますか？'))return;const unknown=entries.filter(e=>!known(e.sector));if(unknown.length){alert('未分類の専門家が'+unknown.length+'名います。出力前にシートを選択してください。');active='UNKNOWN';render();return}const tooLong=entries.some(e=>FIELDS.some(f=>String(e[f]||'').length>32767));if(tooLong&&!confirm('Excelのセル文字数上限を超える内容があります。超過部分は切り詰められます。続行しますか？'))return;try{download(buildXlsx(entries,sheets.map(s=>s.name)),exportName(),'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');status('Excelを出力しました：'+entries.length+'名 ／ '+sheets.length+'シート。')}catch(err){console.error(err);alert('Excelの出力に失敗しました：'+err.message)}};
 document.getElementById('backup').onclick=()=>{download(JSON.stringify({tool:'Third Bridge Expert Profile Excel',...state()},null,2),((projectName||'Expert_List').replace(/[\\/:*?"<>|]/g,'_')||'Expert_List')+'_Backup.json','application/json');status('バックアップをダウンロードしました。')};
 document.getElementById('restore').onclick=()=>document.getElementById('restoreInput').click();
-document.getElementById('restoreInput').onchange=async ev=>{let f=ev.target.files?.[0];if(!f)return;try{let raw=JSON.parse(await f.text());let data=Array.isArray(raw)?raw:raw.entries;if(!Array.isArray(data)||data.some(e=>!e||typeof e!=='object'||typeof e.name!=='string'))throw Error('データ形式が正しくありません。');let sh=Array.isArray(raw.sheets)&&raw.sheets.length?raw.sheets:defaultSheets();if(sh.some(x=>!x||typeof x.name!=='string'||!x.name.trim()))throw Error('シート情報が正しくありません。');if(!confirm('現在の案件データをバックアップの内容に置き換えますか？'))return;entries=data.map(e=>Object.assign({name:'',history:'',experience:'',qa:'',fee:'',availability:'',notes:'',sector:'',status:'',raw:''},e));sheets=sh;projectName=String(raw.projectName||'');document.getElementById('projectName').value=projectName;active='ALL';closeEdit();saveState();renderAll();status('バックアップを復元しました（'+entries.length+'名）。')}catch(err){alert('バックアップの読み込みに失敗しました：'+err.message)}finally{ev.target.value=''}};
+document.getElementById('restoreInput').onchange=async ev=>{let f=ev.target.files?.[0];if(!f)return;try{let raw=JSON.parse(await f.text());let data=Array.isArray(raw)?raw:raw.entries;if(!Array.isArray(data)||data.some(e=>!e||typeof e!=='object'||typeof e.name!=='string'))throw Error('データ形式が正しくありません。');let sh=defaultSheets();if(sh.some(x=>!x||typeof x.name!=='string'||!x.name.trim()))throw Error('シート情報が正しくありません。');if(!confirm('現在の案件データをバックアップの内容に置き換えますか？'))return;entries=data.map(e=>Object.assign({name:'',history:'',experience:'',qa:'',fee:'',availability:'',notes:'',sector:'',status:'',raw:''},e));sheets=sh;projectName=String(raw.projectName||'');document.getElementById('projectName').value=projectName;active='ALL';closeEdit();saveState();renderAll();status('バックアップを復元しました（'+entries.length+'名）。')}catch(err){alert('バックアップの読み込みに失敗しました：'+err.message)}finally{ev.target.value=''}};
 document.getElementById('reset').onclick=()=>{if(!confirm('この案件の専門家をすべて削除しますか？\n必要に応じて事前にJSONバックアップを作成してください。'))return;entries=[];active='ALL';closeEdit();saveState();renderAll();status('専門家をすべて削除しました。')};
 document.getElementById('newProject').onclick=()=>{if(!confirm('新しい案件を開始しますか？\n現在の案件名・シート設定・専門家一覧を初期化します。\n必要に応じて事前にJSONバックアップを作成してください。'))return;entries=[];sheets=defaultSheets();projectName='';active='ALL';closeEdit();document.getElementById('projectName').value='';document.getElementById('source').value='';document.getElementById('parseInfo').textContent='';saveState();renderAll();status('新しい案件を開始しました。')};
 loadState();document.getElementById('projectName').value=projectName;renderAll();
