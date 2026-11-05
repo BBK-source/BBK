@@ -99,61 +99,62 @@ function cleanLine(s){return String(s||'').trim().replace(/^\|\s*/,'').replace(/
 function isSep(s){return /^\s*[|:\-\s]{3,}\s*$/.test(s)||/^\s*\|?\s*-{3,}/.test(s)&&!/[\p{L}\p{N}]/u.test(s);}
 function tidySection(s){let lines=normalizeText(s).split('\n').map(cleanLine);lines=lines.filter(x=>!isSep(x)&&!/^\s*(?:Experts[-－]|Book Now$|Project page:|Excel download:)/i.test(x));return lines.join('\n').replace(/\n{3,}/g,'\n\n').trim().replace(/^[|\s\n]+|[|\s\n]+$/g,'');}
 function headerInfo(s){let raw=cleanLine(s).replace(/^[-*]\s+/,'').replace(/^\\(?=#)/,'');let m=raw.match(/^(#\d{1,3}\.\d{1,3}[A-Za-z]{0,4})\s*[-–—]\s*(.+)$/);if(!m)return null;let remainder=m[2].split(/\s+[-–—]\s+(?=(?:✅|\[?Screened|Current\b|(?:x\s+)?Former\b|:白色的对勾:|:white_check_mark:))/i)[0];remainder=remainder.replace(/\s*(?:✅|✔|☑).*$/,'').replace(/^\*+|\*+$/g,'').trim();return {id:m[1],name:remainder,full:m[1]+' - '+remainder};}
-function nextExpertIsNear(lines, at){
- // 無関係な本文中のコロンを見出しと誤認しないため、次に専門家見出しがあるかを確認。
- let nonEmpty=0;
- for(let i=at+1;i<lines.length&&nonEmpty<5;i++){
-  const t=cleanLine(lines[i]);
-  if(!t||isSep(t))continue;
-  if(headerInfo(t))return true;
-  nonEmpty++;
- }
- return false;
-}
 function safeSheetName(text){
- let name=String(text||'').replace(/[|*]+$/g,'').replace(/\s*[:：]\s*$/,'').trim()
+ let name=String(text||'').replace(/^[|\s]+|[|\s]+$/g,'').replace(/\s*[:：]\s*$/,'').trim()
    .replace(/\s*[:：]\s*/g,' - ').replace(/[\\\/\?\*\[\]]/g,'・').replace(/\s+/g,' ');
- // Excelの31字制限で「China」「US」が欠落しないよう末尾も維持。
+ // Excelの31文字制限。長い見出しはできるだけ末尾の識別子も残す。
  if(name.length>31){const match=name.match(/^(.*?)(\s+-\s+[^-]{2,20})$/);name=match?(match[1].slice(0,31-match[2].length)+match[2]):name.slice(0,31)}
  return name.trim();
 }
-function angleFromHeading(line, nextExpert=false){
- let s=cleanLine(line).replace(/^#{1,6}\s*/, '').replace(/^[*\s]+|[*\s]+$/g,'').trim();
- // 通常版は掲載位置にある見出しを優先。専門家の国籍・所在地からAngleを推測しない。
- // 見出しは直後にエキスパートが続く場合のみ有効。冒頭の目次は無視する。
- if(!nextExpert)return '';
- const ignored=/^(?:Time Zone|Hourly Fee|Employment History|Availability|職歴|アベイラビリティ|Book Now|This specialist is based in|Request Availability|Scheduler Link|Q\s*\d*|A\s*\d*|Question\s*\d*|Answer\s*\d*)\s*[:：]?$/i;
- if(ignored.test(s))return '';
- let name='',m;
- m=s.match(/^(?:Experts?\s*[-－–—]\s*)(.+?)\s*[:：]?$/i);
- if(m)name=m[1];
- if(!name){m=s.match(/^(?:Angle|アングル|軸)\s*([①-⑳]|\d+)?\s*[:：－–—-]\s*(.+)$/i);if(m)name=(m[1]?m[1]+' ':'')+m[2];}
- if(!name && /^Part\s*\d+[A-Za-z]?\s*[:：]?$/i.test(s)) name=s.replace(/\s*[:：]\s*$/,'');
- if(!name && /^【\s*(?:最優先|優先|重点|Priority\s*\d*)\s*】.+/i.test(s)) name=s.replace(/\s*[:：]\s*$/,'');
- if(!name){
-  // 配信形式「TSMC ASE, Amkor : China :」「同 : US :」等。
-  m=s.match(/^(.{2,85}?)\s*[:：]\s*([^:：]{2,40}?)\s*[:：]\s*$/)||
-    (/\b(?:China|US|USA|Japan|Korea|Europe|中国系|日系|米系)\s*$/i.test(s)?s.match(/^(.{2,85}?)\s*[:：]\s*([^:：]{2,40})\s*$/):null);
-  if(m && !ignored.test(m[1].trim()))name=m[1].trim()+' - '+m[2].trim();
- }
- if(!name && /^(?:China|US|USA|Japan|Korea|Europe|中国系|日系|米系)\s*[:：]$/i.test(s)) name=s.replace(/\s*[:：]\s*$/,'').trim();
- if(!name && /^[^:：]{2,85}\s*[:：]$/.test(s) && !ignored.test(s)){
-  // 「データセンター事業者:」など任意のシンプルなAngle見出し。
-  name=s.replace(/\s*[:：]\s*$/,'').trim();
- }
- return safeSheetName(name);
+function isListFurniture(text){
+ const s=cleanLine(text).replace(/^[#>*\s]+/,'').trim();
+ // Expert Listのプロフィール本文・フッター・ページリンクをAngleとして扱わない。
+ return !s||isSep(s)||/^(?:View project|Project page|Excel download|Scheduler Link|Book Now|Request Availability|This specialist|The specialist|Hourly\s*Fee|Employment\s*History|職歴|Availability|アベイラビリティ|Time\s*Zone|Location|Based in|Screen(?:ed|ing)|【\s*(?:screened|screeend|screend)|\[\s*(?:screened|screeend|screend)|Updated?|Last updated|[QA]\s*\d*\s*[.．:：]|[QA]\s*\d*\s+|料金|単価|アベイラビリティ|プロフィール|ご経験|業務経歴|RE\s*[:：]|NB\s*[:：])/i.test(s)||/^(?:https?:\/\/|www\.)/i.test(s)||/\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)(?:day)?\s+\d{1,2}\s+[A-Za-z]+\b/i.test(s);
+}
+function angleFromHeading(line,{isolated=false,adjacent=false}={}){
+ const original=String(line||'').trim();
+ let s=cleanLine(original).replace(/^#{1,6}\s+(?=\D)/,'').replace(/^[>\s]+/,'').replace(/^\*+|\*+$/g,'').trim();
+ if(!s||s.length>130||isListFurniture(s)||headerInfo(s))return '';
+ // 分野名そのものには依存しない。専門家見出しの直前にある「見出し行」の形式だけを判定。
+ // - Experts / Angle / Part / Group等の構造ラベル
+ // - 任意の「会社・案件名 : 地域 :」「【任意の区分】名称:」「任意のAngle名:」
+ // - 強調・独立した短い見出し（本文の普通の一文は除外）
+ const structural=/^(?:Experts?\s*[-－–—:：]|(?:Angle|アングル|軸|区分|カテゴリ(?:ー)?|Category|Group|領域)\s*(?:[①-⑳\dA-Za-z.－-]+)?\s*[:：－–—-]|Part\s*\d+[A-Za-z]?(?:\s*[:：]|$))/i.test(s);
+ const colonHeading=/[:：]\s*$/.test(s);
+ const markedHeading=/^(?:【[^】]{1,28}】|\[[^\]]{2,28}\]\s*[-–—:：]|■\s*|◆\s*|●\s*)/.test(s);
+ const markdownTitle=/^\s*#{1,6}\s+/.test(original)||/^\s*\*\*[^*]+\*\*\s*$/.test(original);
+ const plainIsolated=isolated&&adjacent&&s.length<=70&&!/[。！？!?;；]$/.test(s)&&!s.includes('。')&&!/\s{2,}/.test(s);
+ if(!(structural||colonHeading||markedHeading||markdownTitle||plainIsolated))return '';
+ // QAの文末にコロンがあっても見出しとみなさない。
+ if(/^[QA]\s*\d*\s*[.:：．]/i.test(s))return '';
+ // 『Experts-地域名』は一覧見出しの接頭辞を落とし、元のAngle名だけを残す。
+ const expertsTitle=s.match(/^Experts?\s*[-－–—:：]\s*(.+)$/i);
+ if(expertsTitle)s=expertsTitle[1].trim();
+ return safeSheetName(s);
+}
+function findAngleDirectlyBefore(lines,at,prevExpert){
+ let i=at-1;
+ while(i>prevExpert&&(!cleanLine(lines[i])||isSep(cleanLine(lines[i]))))i--;
+ if(i<=prevExpert)return null;
+ const before=String(lines[i-1]||''), after=lines.slice(i+1,at);
+ const isolated=(!before.trim()||isSep(before))&&after.every(x=>!cleanLine(x)||isSep(cleanLine(x)));
+ const name=angleFromHeading(lines[i],{isolated,adjacent:true});
+ return name?{name,index:i}:null;
 }
 function getRawSections(raw){
- const lines=normalizeText(raw).split('\n'), indices=[],headings=[];let group='';
- for(let i=0;i<lines.length;i++){
-  const a=angleFromHeading(lines[i],nextExpertIsNear(lines,i));if(a){group=a;headings.push(i)}
-  if(headerInfo(lines[i]))indices.push({idx:i,group});
+ const lines=normalizeText(raw).split('\n'),indices=[];
+ for(let i=0;i<lines.length;i++)if(headerInfo(lines[i]))indices.push(i);
+ if(!indices.length)return [{header:'',body:raw,group:''}];
+ let current='',boundaries=[];
+ for(let k=0;k<indices.length;k++){
+  const found=findAngleDirectlyBefore(lines,indices[k],k?indices[k-1]:-1);
+  if(found)current=found.name;
+  boundaries.push({index:indices[k],group:current,headingAt:found?.index??-1});
  }
- if(!indices.length)return [{header:'',body:raw,group}];
- return indices.map((item,i)=>{
-  let stop=indices[i+1]?.idx??lines.length;
-  const nextAngle=headings.find(pos=>pos>item.idx&&pos<stop);if(nextAngle!==undefined)stop=nextAngle;
-  return {header:lines[item.idx],body:lines.slice(item.idx+1,stop).join('\n'),group:item.group};
+ return boundaries.map((b,k)=>{
+  let end=indices[k+1]??lines.length;
+  if(k+1<boundaries.length&&boundaries[k+1].headingAt>b.index)end=boundaries[k+1].headingAt;
+  return {header:lines[b.index],body:lines.slice(b.index+1,end).join('\n'),group:b.group};
  });
 }
 function parseHistory(text){const lines=normalizeText(text).split('\n').filter(s=>!isSep(s));let out=[];
