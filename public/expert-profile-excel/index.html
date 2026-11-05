@@ -98,25 +98,52 @@ function normalizeText(s){return decodeText(String(s||'').replace(/<br\s*\/?\s*>
 function cleanLine(s){return String(s||'').trim().replace(/^\|\s*/,'').replace(/\s*\|$/,'').replace(/\*\*/g,'').replace(/^>\s?/, '> ').replace(/^\s*[-*]\s+/,m=>m).trim();}
 function isSep(s){return /^\s*[|:\-\s]{3,}\s*$/.test(s)||/^\s*\|?\s*-{3,}/.test(s)&&!/[\p{L}\p{N}]/u.test(s);}
 function tidySection(s){let lines=normalizeText(s).split('\n').map(cleanLine);lines=lines.filter(x=>!isSep(x)&&!/^\s*(?:Experts[-－]|Book Now$|Project page:|Excel download:)/i.test(x));return lines.join('\n').replace(/\n{3,}/g,'\n\n').trim().replace(/^[|\s\n]+|[|\s\n]+$/g,'');}
-function headerInfo(s){let raw=cleanLine(s).replace(/^[-*]\s+/,'');let m=raw.match(/^(#\d{1,3}\.\d{1,3})\s*[-–—]\s*(.+)$/);if(!m)return null;let remainder=m[2].split(/\s+[-–—]\s+(?=(?:✅|\[?Screened|Current\b|Former\b|:白色的对勾:|:white_check_mark:))/i)[0];remainder=remainder.replace(/\s*(?:✅|✔|☑).*$/,'').replace(/^\*+|\*+$/g,'').trim();return {id:m[1],name:remainder,full:m[1]+' - '+remainder};}
-function angleFromHeading(line){
+function headerInfo(s){let raw=cleanLine(s).replace(/^[-*]\s+/,'');let m=raw.match(/^(#\d{1,3}\.\d{1,3}[A-Za-z]{0,4})\s*[-–—]\s*(.+)$/);if(!m)return null;let remainder=m[2].split(/\s+[-–—]\s+(?=(?:✅|\[?Screened|Current\b|(?:x\s+)?Former\b|:白色的对勾:|:white_check_mark:))/i)[0];remainder=remainder.replace(/\s*(?:✅|✔|☑).*$/,'').replace(/^\*+|\*+$/g,'').trim();return {id:m[1],name:remainder,full:m[1]+' - '+remainder};}
+function nextExpertIsNear(lines, at){
+ // 無関係な本文中のコロンを見出しと誤認しないため、次に専門家見出しがあるかを確認。
+ let nonEmpty=0;
+ for(let i=at+1;i<lines.length&&nonEmpty<5;i++){
+  const t=cleanLine(lines[i]);
+  if(!t||isSep(t))continue;
+  if(headerInfo(t))return true;
+  nonEmpty++;
+ }
+ return false;
+}
+function safeSheetName(text){
+ let name=String(text||'').replace(/[|*]+$/g,'').replace(/\s*[:：]\s*$/,'').trim()
+   .replace(/\s*[:：]\s*/g,' - ').replace(/[\\\/\?\*\[\]]/g,'・').replace(/\s+/g,' ');
+ // Excelの31字制限で「China」「US」が欠落しないよう末尾も維持。
+ if(name.length>31){const match=name.match(/^(.*?)(\s+-\s+[^-]{2,20})$/);name=match?(match[1].slice(0,31-match[2].length)+match[2]):name.slice(0,31)}
+ return name.trim();
+}
+function angleFromHeading(line, nextExpert=false){
  let s=cleanLine(line).replace(/^#{1,6}\s*/, '').replace(/^[*\s]+|[*\s]+$/g,'').trim();
- // ユーザーがExpert Listに書いた見出しだけを使用。本文や会社名から通常版の分類は推測しない。
+ // 第三者のExpert List本文は推定分類せず、区切りの見出しだけを拾う。
  let m=s.match(/^(?:Experts?\s*[-－–—]\s*)(.+?)\s*[:：]?$/i);
  let name='';
  if(m){name=m[1]}
  else{
   m=s.match(/^(?:Angle|アングル|軸)\s*([①-⑳]|\d+)?\s*[:：－–—-]\s*(.+)$/i);
   if(m)name=(m[1]?m[1]+' ':'')+m[2];
+  else if(nextExpert&&!/^(?:Time Zone|Hourly Fee|Employment History|Availability|職歴|アベイラビリティ|Book Now|This specialist is based in|Q\d+|A\d+)\s*[:：]/i.test(s)){
+   // Third Bridgeの配信用リストにある「TSMC ASE, Amkor : China:」「... : US :」形式。
+   // 同じ形式で、地域以外の任意のAngle名も認識できる。
+   const label=s.match(/^(.{2,85}?)\s*[:：]\s*([^:：]{2,40}?)\s*[:：]\s*$/)||
+     (/\b(?:China|US|USA|Japan|Korea|Europe|中国系|日系|米系)\s*$/i.test(s)?s.match(/^(.{2,85}?)\s*[:：]\s*([^:：]{2,40})\s*$/):null);
+   if(label&&!/^(?:Time Zone|Hourly Fee|Employment History|Availability|職歴|アベイラビリティ|Book Now|This specialist is based in|Q\d+|A\d+)$/i.test(label[1].trim())){
+    name=label[1].trim()+' - '+label[2].trim();
+   }else if(/^(?:China|US|USA|Japan|Korea|Europe|中国系|日系|米系)\s*[:：]$/i.test(s)){
+    name=s.replace(/\s*[:：]\s*$/,'').trim();
+   }
+  }
  }
- if(!name)return '';
- name=name.replace(/[|*]+$/g,'').replace(/\s*[:：]\s*$/,'').trim().replace(/[\\\/\?\*\[\]:]/g,'・');
- return name.slice(0,31).trim();
+ return safeSheetName(name);
 }
 function getRawSections(raw){
  const lines=normalizeText(raw).split('\n'), indices=[],headings=[];let group='';
  for(let i=0;i<lines.length;i++){
-  const a=angleFromHeading(lines[i]);if(a){group=a;headings.push(i)}
+  const a=angleFromHeading(lines[i],nextExpertIsNear(lines,i));if(a){group=a;headings.push(i)}
   if(headerInfo(lines[i]))indices.push({idx:i,group});
  }
  if(!indices.length)return [{header:'',body:raw,group}];
@@ -179,7 +206,16 @@ function inferSector(text){
  return gap>=3&&results[0].score>=results[1].score*1.18?results[0].name:'';
 }
 function parseProfiles(raw){let text=String(raw||'').trim();if(!text)return [];return getRawSections(text).map(parseSingle).filter(r=>r.name||r.experience||r.history);}
-function dedupeKey(str){return String(str||'').replace(/^#\d+\.\d+\s*[-–—]\s*/,'').replace(/[^\p{L}\p{N}]/gu,'').toLowerCase()}
+function dedupeKey(str){
+ const raw=String(str||'').trim();
+ const match=raw.match(/^(#\d{1,3}\.\d{1,3}[A-Za-z]{0,4})\s*[-–—]\s*(.*)$/i);
+ if(match){
+  // 再取り込み時に「- Former...」や「- x Former...」が付いた旧レコードも同一人物として更新。
+  const name=match[2].split(/\s+[-–—]\s+(?=(?:(?:x|❌|✅)\s*)?(?:Former|Current)\b|\[?Screened\b)/i)[0];
+  return match[1].toLowerCase()+'|'+name.replace(/[^\p{L}\p{N}]/gu,'').toLowerCase();
+ }
+ return raw.replace(/[^\p{L}\p{N}]/gu,'').toLowerCase();
+}
 function xmlEscape(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;')}
 function checkXmlText(s){return String(s??'').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,'').slice(0,32767)}
 function columnName(n){let v='';for(n++;n>0;n=Math.floor((n-1)/26)){v=String.fromCharCode(65+(n-1)%26)+v}return v;}
@@ -227,10 +263,10 @@ function renderMode(){
   const b=document.getElementById(id);b.classList.toggle('selected',chosen);b.setAttribute('aria-pressed',String(chosen));
  }
  document.getElementById('pageSub').textContent=special?'Profileを貼り付けるだけ。4分野に自動分類し、Excelに出力します。分類はあとから変更できます。':'Expert ListのAngle見出しをそのままExcelのシート名にします。分類は手動変更できます。';
- document.getElementById('modeHint').textContent=special?'役職・職歴・経験から4分野に自動分類します。各専門家の分類は手動で変更可能です。':'「Experts-中国系」「Experts-日系」「Angle: ...」などの見出しで分けます。見出しがない場合は未分類になります。';
+ document.getElementById('modeHint').textContent=special?'役職・職歴・経験から4分野に自動分類します。各専門家の分類は手動で変更可能です。':'「Experts-中国系」「Angle: ...」「TSMC ASE, Amkor : China:」などの見出しで分けます。見出しがない場合は未分類になります。';
  document.getElementById('listHint').textContent=special?'4分野に自動分類します。違う場合は「シート」のプルダウンで移動できます。':'貼り付けたExpert ListのAngle別にシートを作ります。必要に応じて「シート」のプルダウンで移動できます。';
  document.getElementById('newAngle').classList.toggle('hide',special);
- document.getElementById('source').placeholder=special?'Third Bridge、Slack、メール等から専門家のProfileを貼り付けてください。':'例：\nExperts-中国系:\n#2.1 - Expert Name - ✅ Current VP at ABC\nRE、Q1、A1、Employment History、Availability、Hourly Fee...\n\nExperts-日系:\n#3.1 - Another Expert - ✅ Former Director at XYZ\nRE、Q1、A1...';
+ document.getElementById('source').placeholder=special?'Third Bridge、Slack、メール等から専門家のProfileを貼り付けてください。':'例：\nTSMC ASE, Amkor : China:\n#1.1 - Expert Name - Current Director at ABC\n\nTSMC ASE, Amkor : US :\n#1.2 - Expert Name - Former VP at XYZ\n\nExperts-中国系:\n#2.1 - Expert Name - ✅ Current VP at ABC\nRE、Q1、A1、Employment History、Availability、Hourly Fee...\n\nExperts-日系:\n#3.1 - Another Expert - ✅ Former Director at XYZ\nRE、Q1、A1...';
 }
 function switchMode(next){
  if(next===mode)return;
