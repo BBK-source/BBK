@@ -59,7 +59,7 @@
   <p id="exportInfo">シート数：4 ／ 専門家：0名 ／ 項目数：7</p>
   <p class="fine">Excel列：Expert名（or ID）、職歴、ご経験、スクリーニング質問への回答、単価、アベイラビリティ、その他特記事項</p>
   <div class="controls" style="margin-top:19px"><button class="btn primary" id="exportXlsx">Excelをダウンロード (.xlsx)</button><button class="btn hide" id="backup">JSONバックアップ</button><button class="btn hide" id="restore">バックアップを復元</button><input id="restoreInput" class="hide" type="file" accept=".json,application/json"></div>
-  <p class="fine" style="margin-top:16px">データはこのブラウザにのみ自動保存されます。他の端末とは同期されません。別の案件で使うときは、必要なExcelを保存してから下の「一覧をクリア」を押してください。</p>
+  <p class="fine" id="storageNotice" style="margin-top:16px">データはこのブラウザにのみ自動保存されます。他の端末とは同期されません。</p>
   <div class="controls"><button class="btn danger small" id="reset">一覧をクリア</button></div>
   <p id="globalStatus" class="status"></p>
  </div>
@@ -251,13 +251,25 @@ const defaultSheets=()=>mode==='special'?[{name:'AI・ロボティクス',keywor
 function html(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function status(s){document.getElementById('globalStatus').textContent=s}
 function state(){return {version:3,mode,projectName,sheets,entries}}
-function saveState(){try{localStorage.setItem(STORAGE_BY_MODE[mode],JSON.stringify(state()));localStorage.setItem(MODE_KEY,mode)}catch(err){status('この環境では自動保存できません。')}}
+function saveState(){
+ // 通常版は一時的な案件ごとの作業用。旧版の保存データも再利用しない。
+ if(mode==='general'){
+  try{localStorage.removeItem(STORAGE_BY_MODE.general);localStorage.setItem(MODE_KEY,mode)}catch(err){}
+  return;
+ }
+ try{localStorage.setItem(STORAGE_BY_MODE.special,JSON.stringify(state()));localStorage.setItem(MODE_KEY,mode)}
+ catch(err){status('この環境では自動保存できません。')}
+}
 function loadState(){
  entries=[];sheets=defaultSheets();projectName='';
+ // 通常版はページを開くたび・モード切替のたびに必ず空欄から始める。
+ if(mode==='general'){
+  try{localStorage.removeItem(STORAGE_BY_MODE.general)}catch(err){}
+  return;
+ }
  try{
-  const o=JSON.parse(localStorage.getItem(STORAGE_BY_MODE[mode])||'null');if(!o)return;
+  const o=JSON.parse(localStorage.getItem(STORAGE_BY_MODE.special)||'null');if(!o)return;
   if(Array.isArray(o.entries))entries=o.entries;
-  if(mode==='general'&&Array.isArray(o.sheets))sheets=o.sheets.filter(x=>x&&typeof x.name==='string'&&x.name.trim());
   if(typeof o.projectName==='string')projectName=o.projectName;
  }catch(err){status('保存データを読み込めませんでした。')}
 }
@@ -266,10 +278,14 @@ function renderMode(){
  for(const [id,chosen] of [['modeSpecial',special],['modeGeneral',!special]]){
   const b=document.getElementById(id);b.classList.toggle('selected',chosen);b.setAttribute('aria-pressed',String(chosen));
  }
- document.getElementById('pageSub').textContent=special?'Profileを貼り付けるだけ。4分野に自動分類し、Excelに出力します。分類はあとから変更できます。':'Expert ListのAngle見出しをそのままExcelのシート名にします。分類は手動変更できます。';
+ document.getElementById('pageSub').textContent=special?'Profileを貼り付けるだけ。4分野に自動分類し、Excelに出力します。分類はあとから変更できます。':'通常版は毎回空の一覧からスタート。貼り付けたExpert ListのAngle見出しでシートを作成します。';
  document.getElementById('modeHint').textContent=special?'役職・職歴・経験から4分野に自動分類します。各専門家の分類は手動で変更可能です。':'「Part 7:」「【優先】データセンター事業者:」「TSMC ASE, Amkor : China:」などの見出しで分けます。見出しがない場合は未分類になります。';
  document.getElementById('listHint').textContent=special?'4分野に自動分類します。違う場合は「シート」のプルダウンで移動できます。':'Expert ListのAngle見出しからシートを作ります。未分類が残っても別シートで出力できます。';
  document.getElementById('newAngle').classList.toggle('hide',special);
+ document.getElementById('parse').textContent=special?'解析して追加':'解析して一覧を作成';
+ document.getElementById('storageNotice').textContent=special?
+  '専用版：専門家一覧はこのブラウザ内に保存されます。通常版とは共有されません。':
+  '通常版：この一覧は一時的なものです。次の解析で全件入れ替え、再読み込み・モード切替で空になります。Excelは事前に保存してください。';
  document.getElementById('source').placeholder=special?'Third Bridge、Slack、メール等から専門家のProfileを貼り付けてください。':'例：\nPart 7:\n#2.1 - Expert Name - Former Director at ABC\n\n【優先】データセンター事業者:\n#4.1 - Another Expert - Current Manager at DEF\n\nTSMC ASE, Amkor : China:\n#1.1 - Expert Name - Current Director at ABC\n\nTSMC ASE, Amkor : US :\n#1.2 - Expert Name - Former VP at XYZ\n\nExperts-中国系:\n#2.1 - Expert Name - ✅ Current VP at ABC\nRE、Q1、A1、Employment History、Availability、Hourly Fee...\n\nExperts-日系:\n#3.1 - Another Expert - ✅ Former Director at XYZ\nRE、Q1、A1...';
 }
 function switchMode(next){
@@ -308,7 +324,27 @@ document.getElementById('newAngle').onclick=()=>{
 };
 document.getElementById('projectName').onchange=e=>{projectName=e.target.value.trim();saveState()};
 document.getElementById('addSheet').onclick=()=>{let n=sheets.length+1,name='Sheet'+n;while(known(name)){n++;name='Sheet'+n} sheets.push({name,keywords:''});saveState();renderAll()};
-document.getElementById('parse').onclick=()=>{const raw=document.getElementById('source').value.trim();if(!raw){document.getElementById('parseInfo').textContent='Profileを貼り付けてください。';return}let parsed=parseProfiles(raw),added=0,updated=0;if(mode==='general'){for(const e of parsed){if(e.sector&&!known(e.sector))sheets.push({name:e.sector,keywords:''});}}for(let item of parsed){if(!known(item.sector))item.sector='';const idx=entries.findIndex(e=>dedupeKey(e.name)===dedupeKey(item.name));if(idx<0){entries.push(item);added++}else{const old=entries[idx];for(const f of FIELDS){if(item[f])old[f]=item[f]};old.raw=item.raw;old.sector=item.sector||old.sector;updated++}}saveState();renderAll();document.getElementById('parseInfo').textContent='解析 '+parsed.length+' 名 ／ 新規 '+added+' 名 ／ 更新 '+updated+' 名';if(parsed.length)document.getElementById('source').value='';status('解析が完了しました。抽出項目とシートをご確認ください。')};
+document.getElementById('parse').onclick=()=>{
+ const raw=document.getElementById('source').value.trim();
+ if(!raw){document.getElementById('parseInfo').textContent='Profileを貼り付けてください。';return}
+ const parsed=parseProfiles(raw);let added=0,updated=0;
+ if(!parsed.length){document.getElementById('parseInfo').textContent='専門家を検出できませんでした。原文をご確認ください。';return}
+ if(mode==='general'){
+  // 通常版では、今回貼り付けた Expert List だけを扱う。前回の案件は混在させない。
+  entries=[];sheets=[];active='ALL';closeEdit();
+  for(const e of parsed){if(e.sector&&!known(e.sector))sheets.push({name:e.sector,keywords:''})}
+ }
+ for(const item of parsed){
+  if(!known(item.sector))item.sector='';
+  const idx=entries.findIndex(e=>dedupeKey(e.name)===dedupeKey(item.name));
+  if(idx<0){entries.push(item);added++}
+  else{const old=entries[idx];for(const f of FIELDS){if(item[f])old[f]=item[f]};old.raw=item.raw;old.sector=item.sector||old.sector;updated++}
+ }
+ saveState();renderAll();
+ document.getElementById('parseInfo').textContent='解析 '+parsed.length+' 名 ／ 新規 '+added+' 名 ／ 更新 '+updated+' 名';
+ document.getElementById('source').value='';
+ status(mode==='general'?'今回のExpert Listだけで一覧を作成しました。前回の案件とは混在しません。':'解析が完了しました。抽出項目とシートをご確認ください。');
+};
 document.getElementById('clearInput').onclick=()=>{document.getElementById('source').value='';document.getElementById('parseInfo').textContent=''};
 document.getElementById('saveEdit').onclick=()=>{if(editing<0)return;let e=entries[editing];for(const f of FIELDS)e[f]=document.getElementById('edit_'+(f==='availability'?'avail':f)).value;e.sector=document.getElementById('edit_sector').value;if(!e.name.trim()){alert('Expert名を入力してください。');return}saveState();renderAll();document.getElementById('editInfo').textContent='保存しました。'};
 document.getElementById('deleteEdit').onclick=()=>{if(editing<0)return;if(!confirm('「'+entries[editing].name+'」を削除しますか？'))return;entries.splice(editing,1);saveState();closeEdit();renderAll();status('削除しました。')};
