@@ -98,7 +98,7 @@ function normalizeText(s){return decodeText(String(s||'').replace(/<br\s*\/?\s*>
 function cleanLine(s){return String(s||'').trim().replace(/^\|\s*/,'').replace(/\s*\|$/,'').replace(/\*\*/g,'').replace(/^>\s?/, '> ').replace(/^\s*[-*]\s+/,m=>m).trim();}
 function isSep(s){return /^\s*[|:\-\s]{3,}\s*$/.test(s)||/^\s*\|?\s*-{3,}/.test(s)&&!/[\p{L}\p{N}]/u.test(s);}
 function tidySection(s){let lines=normalizeText(s).split('\n').map(cleanLine);lines=lines.filter(x=>!isSep(x)&&!/^\s*(?:Experts[-－]|Book Now$|Project page:|Excel download:)/i.test(x));return lines.join('\n').replace(/\n{3,}/g,'\n\n').trim().replace(/^[|\s\n]+|[|\s\n]+$/g,'');}
-function headerInfo(s){let raw=cleanLine(s).replace(/^[-*]\s+/,'');let m=raw.match(/^(#\d{1,3}\.\d{1,3}[A-Za-z]{0,4})\s*[-–—]\s*(.+)$/);if(!m)return null;let remainder=m[2].split(/\s+[-–—]\s+(?=(?:✅|\[?Screened|Current\b|(?:x\s+)?Former\b|:白色的对勾:|:white_check_mark:))/i)[0];remainder=remainder.replace(/\s*(?:✅|✔|☑).*$/,'').replace(/^\*+|\*+$/g,'').trim();return {id:m[1],name:remainder,full:m[1]+' - '+remainder};}
+function headerInfo(s){let raw=cleanLine(s).replace(/^[-*]\s+/,'').replace(/^\\(?=#)/,'');let m=raw.match(/^(#\d{1,3}\.\d{1,3}[A-Za-z]{0,4})\s*[-–—]\s*(.+)$/);if(!m)return null;let remainder=m[2].split(/\s+[-–—]\s+(?=(?:✅|\[?Screened|Current\b|(?:x\s+)?Former\b|:白色的对勾:|:white_check_mark:))/i)[0];remainder=remainder.replace(/\s*(?:✅|✔|☑).*$/,'').replace(/^\*+|\*+$/g,'').trim();return {id:m[1],name:remainder,full:m[1]+' - '+remainder};}
 function nextExpertIsNear(lines, at){
  // 無関係な本文中のコロンを見出しと誤認しないため、次に専門家見出しがあるかを確認。
  let nonEmpty=0;
@@ -119,24 +119,27 @@ function safeSheetName(text){
 }
 function angleFromHeading(line, nextExpert=false){
  let s=cleanLine(line).replace(/^#{1,6}\s*/, '').replace(/^[*\s]+|[*\s]+$/g,'').trim();
- // 第三者のExpert List本文は推定分類せず、区切りの見出しだけを拾う。
- let m=s.match(/^(?:Experts?\s*[-－–—]\s*)(.+?)\s*[:：]?$/i);
- let name='';
- if(m){name=m[1]}
- else{
-  m=s.match(/^(?:Angle|アングル|軸)\s*([①-⑳]|\d+)?\s*[:：－–—-]\s*(.+)$/i);
-  if(m)name=(m[1]?m[1]+' ':'')+m[2];
-  else if(nextExpert&&!/^(?:Time Zone|Hourly Fee|Employment History|Availability|職歴|アベイラビリティ|Book Now|This specialist is based in|Q\d+|A\d+)\s*[:：]/i.test(s)){
-   // Third Bridgeの配信用リストにある「TSMC ASE, Amkor : China:」「... : US :」形式。
-   // 同じ形式で、地域以外の任意のAngle名も認識できる。
-   const label=s.match(/^(.{2,85}?)\s*[:：]\s*([^:：]{2,40}?)\s*[:：]\s*$/)||
-     (/\b(?:China|US|USA|Japan|Korea|Europe|中国系|日系|米系)\s*$/i.test(s)?s.match(/^(.{2,85}?)\s*[:：]\s*([^:：]{2,40})\s*$/):null);
-   if(label&&!/^(?:Time Zone|Hourly Fee|Employment History|Availability|職歴|アベイラビリティ|Book Now|This specialist is based in|Q\d+|A\d+)$/i.test(label[1].trim())){
-    name=label[1].trim()+' - '+label[2].trim();
-   }else if(/^(?:China|US|USA|Japan|Korea|Europe|中国系|日系|米系)\s*[:：]$/i.test(s)){
-    name=s.replace(/\s*[:：]\s*$/,'').trim();
-   }
-  }
+ // 通常版は掲載位置にある見出しを優先。専門家の国籍・所在地からAngleを推測しない。
+ // 見出しは直後にエキスパートが続く場合のみ有効。冒頭の目次は無視する。
+ if(!nextExpert)return '';
+ const ignored=/^(?:Time Zone|Hourly Fee|Employment History|Availability|職歴|アベイラビリティ|Book Now|This specialist is based in|Request Availability|Scheduler Link|Q\s*\d*|A\s*\d*|Question\s*\d*|Answer\s*\d*)\s*[:：]?$/i;
+ if(ignored.test(s))return '';
+ let name='',m;
+ m=s.match(/^(?:Experts?\s*[-－–—]\s*)(.+?)\s*[:：]?$/i);
+ if(m)name=m[1];
+ if(!name){m=s.match(/^(?:Angle|アングル|軸)\s*([①-⑳]|\d+)?\s*[:：－–—-]\s*(.+)$/i);if(m)name=(m[1]?m[1]+' ':'')+m[2];}
+ if(!name && /^Part\s*\d+[A-Za-z]?\s*[:：]?$/i.test(s)) name=s.replace(/\s*[:：]\s*$/,'');
+ if(!name && /^【\s*(?:最優先|優先|重点|Priority\s*\d*)\s*】.+/i.test(s)) name=s.replace(/\s*[:：]\s*$/,'');
+ if(!name){
+  // 配信形式「TSMC ASE, Amkor : China :」「同 : US :」等。
+  m=s.match(/^(.{2,85}?)\s*[:：]\s*([^:：]{2,40}?)\s*[:：]\s*$/)||
+    (/\b(?:China|US|USA|Japan|Korea|Europe|中国系|日系|米系)\s*$/i.test(s)?s.match(/^(.{2,85}?)\s*[:：]\s*([^:：]{2,40})\s*$/):null);
+  if(m && !ignored.test(m[1].trim()))name=m[1].trim()+' - '+m[2].trim();
+ }
+ if(!name && /^(?:China|US|USA|Japan|Korea|Europe|中国系|日系|米系)\s*[:：]$/i.test(s)) name=s.replace(/\s*[:：]\s*$/,'').trim();
+ if(!name && /^[^:：]{2,85}\s*[:：]$/.test(s) && !ignored.test(s)){
+  // 「データセンター事業者:」など任意のシンプルなAngle見出し。
+  name=s.replace(/\s*[:：]\s*$/,'').trim();
  }
  return safeSheetName(name);
 }
@@ -263,10 +266,10 @@ function renderMode(){
   const b=document.getElementById(id);b.classList.toggle('selected',chosen);b.setAttribute('aria-pressed',String(chosen));
  }
  document.getElementById('pageSub').textContent=special?'Profileを貼り付けるだけ。4分野に自動分類し、Excelに出力します。分類はあとから変更できます。':'Expert ListのAngle見出しをそのままExcelのシート名にします。分類は手動変更できます。';
- document.getElementById('modeHint').textContent=special?'役職・職歴・経験から4分野に自動分類します。各専門家の分類は手動で変更可能です。':'「Experts-中国系」「Angle: ...」「TSMC ASE, Amkor : China:」などの見出しで分けます。見出しがない場合は未分類になります。';
- document.getElementById('listHint').textContent=special?'4分野に自動分類します。違う場合は「シート」のプルダウンで移動できます。':'貼り付けたExpert ListのAngle別にシートを作ります。必要に応じて「シート」のプルダウンで移動できます。';
+ document.getElementById('modeHint').textContent=special?'役職・職歴・経験から4分野に自動分類します。各専門家の分類は手動で変更可能です。':'「Part 7:」「【優先】データセンター事業者:」「TSMC ASE, Amkor : China:」などの見出しで分けます。見出しがない場合は未分類になります。';
+ document.getElementById('listHint').textContent=special?'4分野に自動分類します。違う場合は「シート」のプルダウンで移動できます。':'Expert ListのAngle見出しからシートを作ります。未分類が残っても別シートで出力できます。';
  document.getElementById('newAngle').classList.toggle('hide',special);
- document.getElementById('source').placeholder=special?'Third Bridge、Slack、メール等から専門家のProfileを貼り付けてください。':'例：\nTSMC ASE, Amkor : China:\n#1.1 - Expert Name - Current Director at ABC\n\nTSMC ASE, Amkor : US :\n#1.2 - Expert Name - Former VP at XYZ\n\nExperts-中国系:\n#2.1 - Expert Name - ✅ Current VP at ABC\nRE、Q1、A1、Employment History、Availability、Hourly Fee...\n\nExperts-日系:\n#3.1 - Another Expert - ✅ Former Director at XYZ\nRE、Q1、A1...';
+ document.getElementById('source').placeholder=special?'Third Bridge、Slack、メール等から専門家のProfileを貼り付けてください。':'例：\nPart 7:\n#2.1 - Expert Name - Former Director at ABC\n\n【優先】データセンター事業者:\n#4.1 - Another Expert - Current Manager at DEF\n\nTSMC ASE, Amkor : China:\n#1.1 - Expert Name - Current Director at ABC\n\nTSMC ASE, Amkor : US :\n#1.2 - Expert Name - Former VP at XYZ\n\nExperts-中国系:\n#2.1 - Expert Name - ✅ Current VP at ABC\nRE、Q1、A1、Employment History、Availability、Hourly Fee...\n\nExperts-日系:\n#3.1 - Another Expert - ✅ Former Director at XYZ\nRE、Q1、A1...';
 }
 function switchMode(next){
  if(next===mode)return;
@@ -310,7 +313,11 @@ document.getElementById('saveEdit').onclick=()=>{if(editing<0)return;let e=entri
 document.getElementById('deleteEdit').onclick=()=>{if(editing<0)return;if(!confirm('「'+entries[editing].name+'」を削除しますか？'))return;entries.splice(editing,1);saveState();closeEdit();renderAll();status('削除しました。')};
 document.getElementById('closeEditor').onclick=closeEdit;
 document.getElementById('addManual').onclick=()=>{entries.push({name:'',sector:sheets.length===1?sheets[0].name:'',history:'',experience:'',qa:'',fee:'',availability:'',notes:'',status:'手動追加',raw:''});saveState();renderAll();openEdit(entries.length-1)};
-document.getElementById('exportXlsx').onclick=()=>{if(!entries.length&&!confirm('専門家が0名です。ヘッダーのみのExcelを出力しますか？'))return;const unknown=entries.filter(e=>!known(e.sector));if(unknown.length){alert('未分類の専門家が'+unknown.length+'名います。出力前にシートを選択してください。');active='UNKNOWN';render();return}const tooLong=entries.some(e=>FIELDS.some(f=>String(e[f]||'').length>32767));if(tooLong&&!confirm('Excelのセル文字数上限を超える内容があります。超過部分は切り詰められます。続行しますか？'))return;try{download(buildXlsx(entries,sheets.length?sheets.map(s=>s.name):['エキスパート一覧']),exportName(),'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');status('Excelを出力しました：'+entries.length+'名 ／ '+sheets.length+'シート。')}catch(err){console.error(err);alert('Excelの出力に失敗しました：'+err.message)}};
+document.getElementById('exportXlsx').onclick=()=>{if(!entries.length&&!confirm('専門家が0名です。ヘッダーのみのExcelを出力しますか？'))return;const unknown=entries.filter(e=>!known(e.sector));if(mode==='special'&&unknown.length){alert('未分類の専門家が'+unknown.length+'名います。出力前にシートを選択してください。');active='UNKNOWN';render();return}const tooLong=entries.some(e=>FIELDS.some(f=>String(e[f]||'').length>32767));if(tooLong&&!confirm('Excelのセル文字数上限を超える内容があります。超過部分は切り詰められます。続行しますか？'))return;try{const sheetNames=sheets.length?sheets.map(s=>s.name):[];
+ const unclassifiedName=sheetNames.includes('未分類')?'未分類・要確認':'未分類';
+ const exportSheets=mode==='general'?(unknown.length?[...sheetNames,unclassifiedName]:(sheetNames.length?sheetNames:['エキスパート一覧'])):sheetNames;
+ const exportEntries=mode==='general'&&unknown.length?entries.map(e=>known(e.sector)?e:{...e,sector:unclassifiedName}):entries;
+ download(buildXlsx(exportEntries,exportSheets),exportName(),'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');status('Excelを出力しました：'+entries.length+'名 ／ '+exportSheets.length+'シート'+(unknown.length?'（未分類 '+unknown.length+'名を別シートへ）':'')+'。')}catch(err){console.error(err);alert('Excelの出力に失敗しました：'+err.message)}};
 document.getElementById('backup').onclick=()=>{download(JSON.stringify({tool:'Third Bridge Expert Profile Excel',...state()},null,2),((projectName||'Expert_List').replace(/[\\/:*?"<>|]/g,'_')||'Expert_List')+'_Backup.json','application/json');status('バックアップをダウンロードしました。')};
 document.getElementById('restore').onclick=()=>document.getElementById('restoreInput').click();
 document.getElementById('restoreInput').onchange=async ev=>{let f=ev.target.files?.[0];if(!f)return;try{let raw=JSON.parse(await f.text());let data=Array.isArray(raw)?raw:raw.entries;if(!Array.isArray(data)||data.some(e=>!e||typeof e!=='object'||typeof e.name!=='string'))throw Error('データ形式が正しくありません。');let sh=defaultSheets();if(sh.some(x=>!x||typeof x.name!=='string'||!x.name.trim()))throw Error('シート情報が正しくありません。');if(!confirm('現在の案件データをバックアップの内容に置き換えますか？'))return;entries=data.map(e=>Object.assign({name:'',history:'',experience:'',qa:'',fee:'',availability:'',notes:'',sector:'',status:'',raw:''},e));sheets=sh;projectName=String(raw.projectName||'');document.getElementById('projectName').value=projectName;active='ALL';closeEdit();saveState();renderAll();status('バックアップを復元しました（'+entries.length+'名）。')}catch(err){alert('バックアップの読み込みに失敗しました：'+err.message)}finally{ev.target.value=''}};
