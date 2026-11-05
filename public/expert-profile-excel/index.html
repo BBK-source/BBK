@@ -59,7 +59,7 @@
   <p id="exportInfo">シート数：4 ／ 専門家：0名 ／ 項目数：7</p>
   <p class="fine">Excel列：Expert名（or ID）、職歴、ご経験、スクリーニング質問への回答、単価、アベイラビリティ、その他特記事項</p>
   <div class="controls" style="margin-top:19px"><button class="btn primary" id="exportXlsx">Excelをダウンロード (.xlsx)</button><button class="btn hide" id="backup">JSONバックアップ</button><button class="btn hide" id="restore">バックアップを復元</button><input id="restoreInput" class="hide" type="file" accept=".json,application/json"></div>
-  <p class="fine" id="storageNotice" style="margin-top:16px">データはこのブラウザにのみ自動保存されます。他の端末とは同期されません。</p>
+  <p class="fine" id="storageNotice" style="margin-top:16px">どちらのモードも初期状態は専門家0名です。入力内容は保存されません。</p>
   <div class="controls"><button class="btn danger small" id="reset">一覧をクリア</button></div>
   <p id="globalStatus" class="status"></p>
  </div>
@@ -244,34 +244,22 @@ function zipStore(files){let encoder=new TextEncoder(),locals=[],centers=[],offs
 function buildXlsx(items,sheetNames){return zipStore(xlsxFiles(items,sheetNames));}
 
 /* CORE_END */
-const MODE_KEY='thirdbridge_expert_excel_mode_v1';
-const STORAGE_BY_MODE={special:'thirdbridge_expert_excel_jp_simple_v2',general:'thirdbridge_expert_excel_jp_general_v1'};
+// 旧版のみで使用された保存キー。現行版は案件データを保存しない。
+const LEGACY_KEYS=['thirdbridge_expert_excel_mode_v1','thirdbridge_expert_excel_jp_simple_v2','thirdbridge_expert_excel_jp_general_v1'];
 let mode='special',entries=[],sheets=[],projectName='',active='ALL',editing=-1;
 const defaultSheets=()=>mode==='special'?[{name:'AI・ロボティクス',keywords:''},{name:'建設',keywords:''},{name:'創薬・先端医療',keywords:''},{name:'合成生物学・バイオ',keywords:''}]:[];
 function html(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function status(s){document.getElementById('globalStatus').textContent=s}
-function state(){return {version:3,mode,projectName,sheets,entries}}
+function state(){return {version:4,mode,projectName,sheets,entries}}
+function clearLegacyData(){
+ // 古いバージョンで保存された専用版・通常版の専門家一覧を読み込ませない。
+ try{for(const key of LEGACY_KEYS)localStorage.removeItem(key)}catch(err){}
+}
 function saveState(){
- // 通常版は一時的な案件ごとの作業用。旧版の保存データも再利用しない。
- if(mode==='general'){
-  try{localStorage.removeItem(STORAGE_BY_MODE.general);localStorage.setItem(MODE_KEY,mode)}catch(err){}
-  return;
- }
- try{localStorage.setItem(STORAGE_BY_MODE.special,JSON.stringify(state()));localStorage.setItem(MODE_KEY,mode)}
- catch(err){status('この環境では自動保存できません。')}
+ // どちらのモードも一時的なセッションであり、次回アクセス時に専門家を復元しない。
 }
 function loadState(){
  entries=[];sheets=defaultSheets();projectName='';
- // 通常版はページを開くたび・モード切替のたびに必ず空欄から始める。
- if(mode==='general'){
-  try{localStorage.removeItem(STORAGE_BY_MODE.general)}catch(err){}
-  return;
- }
- try{
-  const o=JSON.parse(localStorage.getItem(STORAGE_BY_MODE.special)||'null');if(!o)return;
-  if(Array.isArray(o.entries))entries=o.entries;
-  if(typeof o.projectName==='string')projectName=o.projectName;
- }catch(err){status('保存データを読み込めませんでした。')}
 }
 function renderMode(){
  const special=mode==='special';
@@ -284,8 +272,8 @@ function renderMode(){
  document.getElementById('newAngle').classList.toggle('hide',special);
  document.getElementById('parse').textContent=special?'解析して追加':'解析して一覧を作成';
  document.getElementById('storageNotice').textContent=special?
-  '専用版：専門家一覧はこのブラウザ内に保存されます。通常版とは共有されません。':
-  '通常版：この一覧は一時的なものです。次の解析で全件入れ替え、再読み込み・モード切替で空になります。Excelは事前に保存してください。';
+  '専用版：初期状態は専門家0名です。ページ再読み込み・モード切替で一覧は空になります。Excelを先に保存してください。':
+  '通常版：初期状態は専門家0名です。新しいリストの解析で全件入れ替え、ページ再読み込み・モード切替でも空になります。Excelを先に保存してください。';
  document.getElementById('source').placeholder=special?'Third Bridge、Slack、メール等から専門家のProfileを貼り付けてください。':'例：\nPart 7:\n#2.1 - Expert Name - Former Director at ABC\n\n【優先】データセンター事業者:\n#4.1 - Another Expert - Current Manager at DEF\n\nTSMC ASE, Amkor : China:\n#1.1 - Expert Name - Current Director at ABC\n\nTSMC ASE, Amkor : US :\n#1.2 - Expert Name - Former VP at XYZ\n\nExperts-中国系:\n#2.1 - Expert Name - ✅ Current VP at ABC\nRE、Q1、A1、Employment History、Availability、Hourly Fee...\n\nExperts-日系:\n#3.1 - Another Expert - ✅ Former Director at XYZ\nRE、Q1、A1...';
 }
 function switchMode(next){
@@ -358,9 +346,9 @@ document.getElementById('exportXlsx').onclick=()=>{if(!entries.length&&!confirm(
 document.getElementById('backup').onclick=()=>{download(JSON.stringify({tool:'Third Bridge Expert Profile Excel',...state()},null,2),((projectName||'Expert_List').replace(/[\\/:*?"<>|]/g,'_')||'Expert_List')+'_Backup.json','application/json');status('バックアップをダウンロードしました。')};
 document.getElementById('restore').onclick=()=>document.getElementById('restoreInput').click();
 document.getElementById('restoreInput').onchange=async ev=>{let f=ev.target.files?.[0];if(!f)return;try{let raw=JSON.parse(await f.text());let data=Array.isArray(raw)?raw:raw.entries;if(!Array.isArray(data)||data.some(e=>!e||typeof e!=='object'||typeof e.name!=='string'))throw Error('データ形式が正しくありません。');let sh=defaultSheets();if(sh.some(x=>!x||typeof x.name!=='string'||!x.name.trim()))throw Error('シート情報が正しくありません。');if(!confirm('現在の案件データをバックアップの内容に置き換えますか？'))return;entries=data.map(e=>Object.assign({name:'',history:'',experience:'',qa:'',fee:'',availability:'',notes:'',sector:'',status:'',raw:''},e));sheets=sh;projectName=String(raw.projectName||'');document.getElementById('projectName').value=projectName;active='ALL';closeEdit();saveState();renderAll();status('バックアップを復元しました（'+entries.length+'名）。')}catch(err){alert('バックアップの読み込みに失敗しました：'+err.message)}finally{ev.target.value=''}};
-document.getElementById('reset').onclick=()=>{if(!confirm('現在のモードの専門家をすべて削除しますか？'))return;entries=[];active='ALL';closeEdit();saveState();renderAll();status('専門家をすべて削除しました。')};
+document.getElementById('reset').onclick=()=>{if(!confirm('現在のモードの専門家をすべて削除しますか？'))return;entries=[];sheets=defaultSheets();active='ALL';closeEdit();saveState();renderAll();status('専門家をすべて削除しました。')};
 document.getElementById('newProject').onclick=()=>{if(!confirm('新しい案件を開始しますか？\n現在の案件名・シート設定・専門家一覧を初期化します。\n必要に応じて事前にJSONバックアップを作成してください。'))return;entries=[];sheets=defaultSheets();projectName='';active='ALL';closeEdit();document.getElementById('projectName').value='';document.getElementById('source').value='';document.getElementById('parseInfo').textContent='';saveState();renderAll();status('新しい案件を開始しました。')};
-try{mode=localStorage.getItem(MODE_KEY)==='general'?'general':'special'}catch(err){mode='special'}loadState();document.getElementById('projectName').value=projectName;renderAll();
+clearLegacyData();mode='special';loadState();document.getElementById('projectName').value=projectName;renderAll();
 </script>
 </body>
 </html>
