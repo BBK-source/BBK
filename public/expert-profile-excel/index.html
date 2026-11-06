@@ -166,15 +166,45 @@ function parseHistory(text){const lines=normalizeText(text).split('\n').filter(s
  }
  return out.join('\n').trim();}
 function findIndex(lines,re,from=0){for(let i=from;i<lines.length;i++)if(re.test(cleanLine(lines[i])))return i;return -1}
+// Expert Listの原文にはScreening Update / Screened on / # Screening date /
+// Q. / Q: / Q1: などが混在する。日付や特定の案件名に依存しない。
+function isScreeningHeading(text){
+ let s=cleanLine(text).replace(/^(?:\s*#+\s*|\s*[✅✔☑✓]\s*)+/gu,'').replace(/^\s*[\[【(（]\s*/u,'').trim();
+ return /^(?:screen(?:ed|ing)?|screend|screeend|sq|スクリーニング|想定質問|事前質問|筛选|篩選)(?=[\s\d.:：．\-\/\[(（【\])）】]|$)/i.test(s);
+}
+function isScreeningQuestion(text){
+ let s=cleanLine(text).replace(/^\s*(?:[|>*-]+)\s*/,'');
+ return /^(?:Q(?:uestion)?\s*\d{0,2}\s*[.:：．)）\-]|Q\d+\b|質問\s*[\d①-⑳]*\s*[.:：．)）\-]|質問\s*[:：])/i.test(s);
+}
+function isScreeningAnswer(text){
+ let s=cleanLine(text).replace(/^\s*(?:[|>*-]+)\s*/,'');
+ return /^(?:(?:A(?:nswer)?\s*\d{0,2}\s*[.:：．)）\-]|A\d+\b)|(?:⇒|→|➜|➡|回答\s*[:：]|答え\s*[:：]))/i.test(s);
+}
+function findScreeningStart(lines,cutoff){
+ for(let i=0;i<cutoff;i++){
+  if(isScreeningHeading(lines[i]))return i;
+  if(!isScreeningQuestion(lines[i]))continue;
+  // Screening見出しがない資料でも、Q/Aの組み合わせから回答開始行を特定する。
+  const end=Math.min(cutoff,i+36);
+  let count=0;
+  for(let j=i+1;j<end;j++){
+   if(isScreeningAnswer(lines[j]))return i;
+   if(isScreeningQuestion(lines[j])&&++count>=2)return i;
+  }
+ }
+ return -1;
+}
 function parseSingle(section){let raw=normalizeText(section.body);let lines=raw.split('\n');let head=headerInfo(section.header);let firstLine=cleanLine(lines.find(x=>cleanLine(x))||'');
  let name=head?.full||((firstLine.match(/^(?:Expert(?:名| Name)?|Name|专家(?:姓名)?)\s*[:：]\s*(.*)$/i)||[])[1]||firstLine.replace(/^\*+|\*+$/g,'').slice(0,140)).trim()||'（氏名未確認）';
  let exIdx=findIndex(lines,/^(?:Employment History|職歴)\s*[:：]?$/i);let avIdx=findIndex(lines,/^(?:Availability|アベイラビリティ)\s*[:：]?$/i);
- let screenedIdx=findIndex(lines,/^(?:(?:✅|✔|☑)\s*)?(?:[\[【]\s*)?(?:screen(?:ed|ing)(?:\b|\d)|Q\s*\d*\s*[.．:：]|Q\d+\b|スクリーニング質問)/i);
+ let cutoff=[exIdx,avIdx].filter(n=>n>=0).sort((a,b)=>a-b)[0]??lines.length;
+ let screenedIdx=findScreeningStart(lines,cutoff);
  let bodyEnd=[screenedIdx,exIdx,avIdx].filter(n=>n>=0).sort((a,b)=>a-b)[0]??lines.length;
  let experience=tidySection(lines.slice(0,bodyEnd).join('\n'));
  let qaEnd=[exIdx,avIdx].filter(n=>n>screenedIdx).sort((a,b)=>a-b)[0]??lines.length;
  let qa=screenedIdx>=0?tidySection(lines.slice(screenedIdx,qaEnd).join('\n')):'';
- let hEnd=[avIdx].filter(n=>n>exIdx).sort((a,b)=>a-b)[0]??lines.length;
+ let histStop=exIdx>=0?findIndex(lines,/^(?:Availability\s*[:：]?|This specialist has not yet provided any availability|Request Availability|Book Now|This specialist is based|Hourly Fee|Maps by|Time Zone|Scheduler Link)/i,exIdx+1):-1;
+ let hEnd=[avIdx,histStop].filter(n=>n>exIdx).sort((a,b)=>a-b)[0]??lines.length;
  let history=exIdx>=0?parseHistory(lines.slice(exIdx+1,hEnd).join('\n')):'';
  if(!history){let matches=lines.filter(s=>/\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+20\d\d/.test(s)&&/Present|\b20\d\d\b/.test(s));if(matches.length&&exIdx<0)history=parseHistory(matches.slice(0,10).join('\n'))}
  const avEndMarkers=/^(?:Book Now|This specialist is based|Hourly Fee|■\s*Scheduler Link|Scheduler Link)/i;
@@ -182,6 +212,7 @@ function parseSingle(section){let raw=normalizeText(section.body);let lines=raw.
  if(avStop>=0)avLines=avLines.slice(0,avStop);
  let availability=avIdx>=0?tidySection(['Time Zone: (GMT+09:00) Tokyo'].filter(()=>false).concat(avLines).join('\n')):'';
  if(avIdx>=0){let embedded=cleanLine(lines[avIdx]);let after=embedded.replace(/^(?:Availability|アベイラビリティ)\s*[:：]?/i,'').trim();if(after)availability=tidySection(after+'\n'+availability)}
+ if(avIdx<0){const noAvail=findIndex(lines,/^This specialist has not yet provided any availability\.?$/i);if(noAvail>=0)availability=cleanLine(lines[noAvail]);}
  let full=raw+'\n'+String(section.header||'');let fee='';let feeMatch=full.match(/Hourly\s*Fee\s*[:：]\s*(USD|JPY|EUR|GBP|\$|¥)?\s*([\d,]+(?:\.\d{1,2})?)/i);
  if(feeMatch)fee=(feeMatch[1]||'')+feeMatch[2].replaceAll(',','');
  let city=full.match(/This specialist is based in\s+([^\n|.]+(?:\([^\n|]+\))?)/i);
