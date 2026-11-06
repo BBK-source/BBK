@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { emphasizeCompanyNamesText } from "../app/emphasis.js";
+import { emphasizeCompanyNamesText, emphasizeEmploymentCompaniesText } from "../app/emphasis.js";
 
 function highlightedNames(value) {
   return Array.from(
@@ -38,4 +38,35 @@ test("does not classify roles and common industry abbreviations as companies", (
 test("keeps existing link markup intact while highlighting company names", () => {
   const html = emphasizeCompanyNamesText('<a href="https://example.com/expert">TSMC</a>', "#e83b2e");
   assert.match(html, /<a href="https:\/\/example\.com\/expert"><span[^>]*>TSMC<\/span><\/a>/);
+});
+
+function employmentHighlights(value) {
+  return Array.from(
+    emphasizeEmploymentCompaniesText(value, "#e83b2e").matchAll(/<span\s+style="[^"]+">(.*?)<\/span>/g),
+    (match) => match[1],
+  );
+}
+
+test("highlights complete company names in employment history, including unknown brands", () => {
+  assert.deepEqual(employmentHighlights("Ripple - VP Product Marketing"), ["Ripple"]);
+  assert.deepEqual(employmentHighlights("Affirm Holdings, Inc. - Head, Global B2B Product Marketing"), ["Affirm Holdings, Inc."]);
+  assert.deepEqual(employmentHighlights("Block Inc - Director, Product Marketing, Go-to-market & Commercialisation, Square EU"), ["Block Inc"]);
+  assert.deepEqual(employmentHighlights("Intuit Inc - Senior Product Marketing Manager"), ["Intuit Inc"]);
+});
+
+test("separates parent companies from direct employers and leaves titles unmarked", () => {
+  const line = "Google LLC (Alphabet Inc) - Product Marketing Manager, Global SMB Marketing";
+  assert.deepEqual(employmentHighlights(line), ["Google LLC", "Alphabet Inc"]);
+  assert.ok(!emphasizeEmploymentCompaniesText(line, "#e83b2e").includes("<span style=\"color:#e83b2e;font-weight:700\">Product"));
+});
+
+test("does not misclassify independent consulting or role-first entries", () => {
+  assert.deepEqual(employmentHighlights("Independent/Self-Employed - Independent Consultant"), []);
+  assert.deepEqual(employmentHighlights("Self-Employed - Consultant"), []);
+  assert.deepEqual(employmentHighlights("Director - Google LLC"), ["Google LLC"]);
+});
+
+test("keeps original content unchanged when entity highlighting is disabled", () => {
+  const line = "Ripple - VP Product Marketing";
+  assert.equal(emphasizeEmploymentCompaniesText(line, "#e83b2e", false), line);
 });
