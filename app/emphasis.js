@@ -242,7 +242,10 @@ export function emphasizeEmploymentCompaniesText(html, color, enabled = true, de
 
   // If the text is role-first or has link markup, retain the prior fallback
   // instead of labelling a job title as a company or altering nested links.
-  if (JOB_TITLE_FIRST.test(plainEmployer) || /<[^>]+>/.test(employer)) {
+  if (JOB_TITLE_FIRST.test(plainEmployer)) {
+    return `${employer}${separator}${emphasizeCompanyNamesText(position, color, enabled, decoration)}`;
+  }
+  if (/<[^>]+>/.test(employer)) {
     return emphasizeCompaniesText(html, color, enabled, decoration);
   }
 
