@@ -7,10 +7,10 @@
   var tool = location.pathname.indexOf('/expert-profile-excel/') >= 0 ? 'expert_excel' : 'bbk_bunken';
   var language = tool === 'expert_excel' ? 'ja' : (new URLSearchParams(location.search).get('lang') || document.documentElement.lang || 'zh').slice(0, 2);
   var labels = {
-    zh: { message: '允许匿名使用统计吗？仅记录页面访问、邮件复制、Profile 解析、Excel 下载和工具切换。不会上传专家资料或邮件内容。', allow: '允许统计', reject: '不允许', settings: '统计设置', title: '使用统计' },
-    ja: { message: '匿名の利用状況を記録してもよろしいですか？閲覧・コピー・解析・Excel出力・画面切替のみを集計し、専門家情報やメール本文は送信しません。', allow: '許可する', reject: '許可しない', settings: 'アクセス解析設定', title: 'アクセス解析' },
-    en: { message: 'Allow anonymous usage analytics? We count page visits and tool actions only; expert profiles and email text are never sent.', allow: 'Allow', reject: 'Decline', settings: 'Analytics settings', title: 'Usage analytics' },
-    ko: { message: '익명 사용 통계를 허용하시겠어요? 방문 및 도구 사용 횟수만 기록하며 전문가 정보와 이메일 내용은 전송하지 않습니다.', allow: '허용', reject: '거부', settings: '통계 설정', title: '사용 통계' }
+    zh: { message: '允许使用 Google Analytics 统计吗？它可能使用 Cookie 及大致地区信息；我们只主动记录页面访问与按钮操作，不上传专家资料或邮件正文。', allow: '允许统计', reject: '不允许', settings: '统计设置', title: '使用统计' },
+    ja: { message: 'Google Analytics による利用状況の集計を許可しますか？Cookieやおおよその地域情報が利用される場合があります。専門家情報やメール本文は送信しません。', allow: '許可する', reject: '許可しない', settings: 'アクセス解析設定', title: 'アクセス解析' },
+    en: { message: 'Allow Google Analytics? It may use cookies and approximate location data. We track page visits and tool actions without sending expert profiles or email text.', allow: 'Allow', reject: 'Decline', settings: 'Analytics settings', title: 'Usage analytics' },
+    ko: { message: 'Google Analytics 사용 통계를 허용하시겠어요? 쿠키 및 대략적인 지역 정보가 사용될 수 있습니다. 전문가 정보와 이메일 내용은 전송하지 않습니다.', allow: '허용', reject: '거부', settings: '통계 설정', title: '사용 통계' }
   };
   var copy = labels[language] || labels.en;
   var choice = '';
@@ -32,6 +32,10 @@
     // Collect only deliberate events with sanitized page details; disable ad signals.
     window.gtag('config', MEASUREMENT_ID, {
       send_page_view: false,
+      // Override the default URL for all events so query strings are never transmitted.
+      page_location: location.origin + location.pathname,
+      page_referrer: '',
+      page_title: tool === 'expert_excel' ? 'Expert Profile Excel Tool' : 'BBK Bunken',
       allow_google_signals: false,
       allow_ad_personalization_signals: false
     });
