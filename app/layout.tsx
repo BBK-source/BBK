@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import Script from "next/script";
 
 const basePath = process.env.GITHUB_ACTIONS === "true" ? "/BBK" : "";
 
@@ -21,7 +22,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja">
-      <body>{children}</body>
+      <body>
+        {children}
+        <Script src={`${basePath}/analytics.js`} strategy="afterInteractive" />
+      </body>
     </html>
   );
 }

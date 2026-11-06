@@ -1450,6 +1450,8 @@ export default function Home() {
       transfer.remove();
     }
     setCopied(true);
+    // Only the event type is recorded after an actual copy; never send email/profile content.
+    window.dispatchEvent(new CustomEvent("bbk:analytics", { detail: { name: "mail_copy" } }));
     window.setTimeout(() => setCopied(false), 1800);
   }
 
@@ -1482,6 +1484,7 @@ export default function Home() {
       transfer.remove();
     }
     setSummaryListCopied(true);
+    window.dispatchEvent(new CustomEvent("bbk:analytics", { detail: { name: "mail_copy" } }));
     window.setTimeout(() => setSummaryListCopied(false), 1600);
   }
 
