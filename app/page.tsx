@@ -1490,6 +1490,20 @@ export default function Home() {
       <header className="topbar">
         <div className="brand"><span className="brandMark" aria-hidden="true"><img src="./bbk-work-buddy.png" alt="" /></span><span>BBK Bunken</span></div>
         <div className="topActions">
+          <a
+            className="buddyPortal"
+            href="./expert-profile-excel/"
+            title={lang === "zh" ? "去 Excel 专家列表工具" : lang === "ja" ? "Excelエキスパート一覧ツールへ" : lang === "ko" ? "Excel 전문가 목록 도구로 이동" : "Open Expert Profile to Excel"}
+            aria-label={lang === "zh" ? "切换到 Expert Profile Excel 工具" : lang === "ja" ? "Excelエキスパート一覧ツールに切り替える" : lang === "ko" ? "Excel 전문가 도구로 전환" : "Switch to Expert Profile Excel tool"}
+          >
+            <span className="buddyPortalPair" aria-hidden="true">
+              <img className="buddyPortalCurrent" src="./bbk-work-buddy.png" alt="" />
+              <span className="buddyPortalSpark">✦</span>
+              <img className="buddyPortalTarget" src="./expert-profile-excel/favicon.png" alt="" />
+            </span>
+            <span className="buddyPortalLabel">{lang === "zh" ? "专家 → Excel" : lang === "ja" ? "Excel一覧へ" : lang === "ko" ? "Excel 목록" : "Expert → Excel"}</span>
+            <span className="buddyPortalArrow" aria-hidden="true">↗</span>
+          </a>
           <div className="languageSwitch" aria-label="Interface language">
             {LANGUAGES.map((item) => (
               <button key={item} className={lang === item ? "active" : ""} onClick={() => changeLanguage(item)}>
