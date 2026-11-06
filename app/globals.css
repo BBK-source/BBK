@@ -774,3 +774,62 @@ footer {
   .buddyPortal, .buddyPortalPair img { transition: none; }
   .buddyPortal:hover, .buddyPortal:hover .buddyPortalCurrent, .buddyPortal:hover .buddyPortalTarget { transform: none; }
 }
+
+
+/* Bigger mascot + matching header structure for BBK and Expert Excel. */
+.topbar {
+  position: relative; top: auto; z-index: 30;
+  height: auto; min-height: 180px;
+  padding: 15px max(22px, calc((100vw - 1360px)/2));
+  gap: 22px; background: #fff;
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+.brand { display: flex; align-items: center; gap: 23px; min-width: 0; font-weight: inherit; }
+.brandMark {
+  width: 182px; height: 150px; flex: 0 0 182px;
+  border: 0; border-radius: 0; overflow: visible; background: transparent; box-shadow: none;
+}
+.brandMark img { width: 100%; height: 100%; object-fit: contain; }
+.brandCopy { display: flex; min-width: 0; flex-direction: column; align-items: flex-start; gap: 8px; }
+.brandTitle { color: #202734; font-size: 20px; line-height: 1.22; font-weight: 720; letter-spacing: -.02em; }
+.brandSubtitle { display: block; color: #637182; font-size: 12px; font-weight: 400; line-height: 1.6; letter-spacing: 0; }
+.topActions { margin-left: auto; flex: 0 0 auto; gap: 13px; }
+.buddyPortal { min-height: 66px; padding: 6px 15px 6px 9px; gap: 11px; font-size: 13px; }
+.buddyPortalPair { width: 100px; flex: 0 0 100px; height: 53px; }
+.buddyPortalPair img { width: 53px; height: 53px; border-width: 2px; }
+.buddyPortalSpark { left: 46px; top: 1px; font-size: 15px; }
+.buddyPortalArrow { font-size: 16px; }
+.hero { min-height: 155px; padding-top: 19px; padding-bottom: 19px; }
+@media (max-width: 1100px) {
+  .topbar { flex-wrap: wrap; gap: 4px 14px; }
+  .topActions { justify-content: flex-end; width: 100%; margin-left: 0; }
+  .brandMark { width: 152px; height: 126px; flex-basis: 152px; }
+}
+@media (max-width: 780px) {
+  .buddyPortal { min-height: 55px; padding: 4px 7px; gap: 0; }
+  .buddyPortalPair { width: 82px; flex-basis: 82px; height: 44px; }
+  .buddyPortalPair img { width: 44px; height: 44px; }
+  .buddyPortalSpark { left: 37px; font-size: 12px; }
+  .buddyPortalLabel, .buddyPortalArrow { display: none; }
+}
+@media (max-width: 680px) {
+  .topbar { padding: 12px 14px; }
+  .brand { gap: 12px; }
+  .brandMark { width: 111px; height: 94px; flex-basis: 111px; }
+  .brandTitle { font-size: 18px; }
+  .brandSubtitle { font-size: 11px; }
+  .topActions { justify-content: flex-end; }
+  .hero { min-height: 130px; }
+}
+@media (max-width: 420px) {
+  .topbar { padding: 10px 12px; }
+  .brand > .brandCopy { display: flex; }
+  .brandMark { width: 92px; height: 80px; flex-basis: 92px; }
+  .brandTitle { font-size: 16px; }
+  .brandSubtitle { font-size: 10px; }
+  .buddyPortal { min-height: 47px; padding: 3px 5px; }
+  .buddyPortalPair { width: 71px; flex-basis: 71px; height: 39px; }
+  .buddyPortalPair img { width: 39px; height: 39px; }
+  .buddyPortalSpark { left: 33px; }
+  .topActions { gap: 6px; }
+}

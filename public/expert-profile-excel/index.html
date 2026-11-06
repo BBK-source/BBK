@@ -64,6 +64,29 @@
  .excelBuddyPortal,.excelBuddyPair img{transition:none}
  .excelBuddyPortal:hover,.excelBuddyPortal:hover .excelBuddyCurrent,.excelBuddyPortal:hover .excelBuddyTarget{transform:none}
 }
+
+/* Enlarged pair of mascots for easier recognition, to match BBK Bunken. */
+.excelBuddyPortal { padding: 8px 15px 8px 10px; min-height: 73px; gap: 12px; }
+.excelBuddyPair { width: 105px; flex: 0 0 105px; height: 58px; }
+.excelBuddyPair img { width: 58px; height: 58px; border-width: 2px; }
+.excelBuddySpark { left: 51px; top: 1px; font-size: 16px; }
+.excelBuddyLabel { font-size: 13px; }
+.excelBuddyLabel small { font-size: 11px; margin-top: 4px; }
+.excelBuddyArrow { font-size: 16px; }
+@media(max-width:960px) {
+ .excelBuddyPortal { min-height: 62px; padding: 6px 10px; gap: 9px; }
+ .excelBuddyPair { width: 87px; flex-basis: 87px; height: 48px; }
+ .excelBuddyPair img { width: 48px; height: 48px; }
+ .excelBuddySpark { left: 42px; font-size: 12px; }
+}
+@media(max-width:500px) {
+ .excelBuddyPortal { min-height: 53px; padding: 5px 9px; }
+ .excelBuddyPair { width: 76px; flex-basis: 76px; height: 42px; }
+ .excelBuddyPair img { width: 42px; height: 42px; }
+ .excelBuddySpark { left: 37px; }
+ .excelBuddyLabel { font-size: 11px; }
+ .excelBuddyLabel small { font-size: 9px; }
+}
 </style>
 </head>
 <body>

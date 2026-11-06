@@ -1488,7 +1488,13 @@ export default function Home() {
   return (
     <main>
       <header className="topbar">
-        <div className="brand"><span className="brandMark" aria-hidden="true"><img src="./bbk-work-buddy.png" alt="" /></span><span>BBK Bunken</span></div>
+        <div className="brand">
+          <span className="brandMark" aria-hidden="true"><img src="./bbk-work-buddy.png" alt="" /></span>
+          <div className="brandCopy">
+            <span className="brandTitle">BBK Bunken</span>
+            <span className="brandSubtitle">{t.headerHint}</span>
+          </div>
+        </div>
         <div className="topActions">
           <a
             className="buddyPortal"
