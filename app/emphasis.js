@@ -210,6 +210,55 @@ function applyEmphasis(
   return restoreTokens(output, htmlTags, HTML_TOKEN_OPEN, HTML_TOKEN_CLOSE);
 }
 
+// Employment history is structured as "employer - position". Extract the
+// employer from that boundary instead of guessing from legal suffixes or role
+// keywords. The generic prose/QA name highlighter remains unchanged.
+const NON_COMPANY_EMPLOYERS =
+  /^(?:Independent(?:\s*\/\s*Self[- ]Employed)?|Self[- ]Employed|Freelanc(?:e|er)|Not\s+provided|N\/A|自営業|個人事業主|フリーランス|自由职业|自由職業)$/i;
+
+const JOB_TITLE_FIRST =
+  /^(?:(?:Current|Former|Present)\s+)?(?:Senior\s+|Junior\s+|Global\s+)?(?:Director|Manager|Head|Vice\s+President|VP|SVP|CEO|CFO|CTO|COO|Engineer|Consultant|Advisor|Analyst|Specialist|President)\b/i;
+
+function highlightEmployerSpan(value, color, decoration) {
+  const resolvedColor = decoration.color ?? color;
+  const resolvedWeight = decoration.weight ?? 700;
+  const background = decoration.background
+    ? `;background:${decoration.background};padding:0 2px;border-radius:2px`
+    : "";
+  const underline = decoration.underline
+    ? `;text-decoration:underline;text-decoration-color:${resolvedColor};text-underline-offset:2px`
+    : "";
+  return `<span style="color:${resolvedColor};font-weight:${resolvedWeight}${background}${underline}">${value}</span>`;
+}
+
+export function emphasizeEmploymentCompaniesText(html, color, enabled = true, decoration = {}) {
+  if (!enabled) return html;
+  const employment = html.match(/^(.+?)(\s+[-–—]\s+)([\s\S]*)$/);
+  if (!employment) return emphasizeCompanyNamesText(html, color, enabled, decoration);
+
+  const [, employer, separator, position] = employment;
+  const plainEmployer = employer.replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").trim();
+  if (NON_COMPANY_EMPLOYERS.test(plainEmployer)) return html;
+
+  // If the text is role-first or has link markup, retain the prior fallback
+  // instead of labelling a job title as a company or altering nested links.
+  if (JOB_TITLE_FIRST.test(plainEmployer)) {
+    return `${employer}${separator}${emphasizeCompanyNamesText(position, color, enabled, decoration)}`;
+  }
+  if (/<[^>]+>/.test(employer)) {
+    return emphasizeCompaniesText(html, color, enabled, decoration);
+  }
+
+  // If the employer also names a parent company, emphasize each name
+  // separately and leave parentheses unstyled.
+  const parent = employer.match(/^(.*?)(\s*)([（(])([^()（）]+)([）)])$/);
+  if (parent && /\b(?:Inc\.?|Corp(?:oration)?\.?|LLC|Ltd\.?|Limited|Holdings?|Group|PLC|GmbH|AG|Co\.?)\b|株式会社|ホールディングス/i.test(parent[4])) {
+    return `${highlightEmployerSpan(parent[1], color, decoration)}${parent[2]}${parent[3]}${highlightEmployerSpan(parent[4], color, decoration)}${parent[5]}${separator}${position}`;
+  }
+
+  return `${highlightEmployerSpan(employer, color, decoration)}${separator}${position}`;
+}
+
 export function emphasizeCompaniesText(html, color, enabled = true, decoration = {}) {
   return enabled
     ? applyEmphasis(html, color, "companies", true, decoration, true)

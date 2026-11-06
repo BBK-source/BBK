@@ -5,6 +5,7 @@ import type { ClipboardEvent, PointerEvent as ReactPointerEvent } from "react";
 import {
   emphasizeCompanyNamesText,
   emphasizeCompaniesText,
+  emphasizeEmploymentCompaniesText,
   emphasizeQaText,
 } from "./emphasis.js";
 import {
@@ -675,7 +676,7 @@ function formatLine(
     return `<div style="font-weight:700;line-height:1.42;margin-top:3px">${safe}</div>`;
   }
   if (section === "employment" && /\s+-\s+/.test(safe)) {
-    return `<div style="line-height:1.42;padding:1px 0 3px;border-bottom:1px dotted ${colors.border}">${emphasizeCompanies(safe, style, palette, options.entityHighlights, options.emphasisVariant)}</div>`;
+    return `<div style="line-height:1.42;padding:1px 0 3px;border-bottom:1px dotted ${colors.border}">${style === "minimal" ? safe : emphasizeEmploymentCompaniesText(safe, colors.key, options.entityHighlights, emphasisDecoration(palette, options.emphasisVariant))}</div>`;
   }
   if (section === "availability" && isTimeZoneLine(raw)) {
     return `<div style="font-weight:700;line-height:1.42;padding:4px 0;color:${accent}">${safe}</div>`;

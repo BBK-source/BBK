@@ -1,0 +1,29 @@
+name: Check BBK formatting changes
+
+on:
+  pull_request:
+    paths:
+      - "app/**"
+      - "tests/**"
+      - "package.json"
+      - ".github/workflows/check-pr.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm install
+      - run: node --test tests/*.test.mjs
+      - name: Restore image assets
+        run: |
+          base64 --decode assets/bbk-work-buddy.png.b64 > public/bbk-work-buddy.png
+          base64 --decode assets/bbk-team-cameo.png.b64 > public/bbk-team-cameo.png
+      - run: npm run build
