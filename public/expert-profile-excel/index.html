@@ -119,7 +119,7 @@
   <label for="source">1名でも複数名でもOK。職歴・Q&A・単価・アベイラビリティを含むProfile原文を貼り付けてください。</label>
   <textarea id="source" spellcheck="false" placeholder="Third Bridge、Slack、メール等から専門家のProfileを貼り付けてください。\n\n例：\n#2.1 - Expert Name - ✅ Current R&D Director at ABC\n経験の概要……\nQ1. ……\nA1. ……\nEmployment History:\nJan 2024 - Present | ABC | Director\nAvailability:\nMonday 09 November 9:00 PM - 11:30 PM\nHourly Fee: USD1780.00"></textarea>
   <div class="controls"><button class="btn primary" id="parse">解析して追加</button><button class="btn" id="clearInput">入力欄をクリア</button><span class="fine" id="parseInfo"></span></div>
-  <p class="fine">解析とExcel作成はこのブラウザ内で完結します。入力した原文はGitHubに送信されません。原文の文章を書き換えず、コピー時のHTMLタグや表の罫線などを整理します。</p>
+  <p class="fine">解析とExcel作成はこのブラウザ内で完結します。ご経験・Q&A本文は変更せず、職歴を年月表記、アベイラビリティを24時間制・日本時間（JST）に整えます。</p>
  </div>
  <div class="panel">
   <h2>2. Excelを出力</h2>
@@ -152,7 +152,7 @@
   <div class="controls"><button class="btn primary" id="saveEdit">保存</button><button class="btn danger" id="deleteEdit">この専門家を削除</button><span id="editInfo" class="fine"></span></div>
  </div>
 </section>
-<div class="fine">注意：本ツールはルールベースで項目を抽出します。Profileの形式によっては抽出できない項目があるため、出力前に確認してください。日時と通貨は元の表記を維持します。</div>
+<div class="fine">注意：本ツールはルールベースで項目を抽出します。Profileの形式によっては抽出できない項目があるため、出力前に確認してください。通貨は原文どおりに保持し、職歴の年月・アベイラビリティの日時のみ読みやすく整えます。</div>
 </main>
 <script>
 'use strict';
@@ -224,6 +224,112 @@ function getRawSections(raw){
   return {header:lines[b.index],body:lines.slice(b.index+1,end).join('\n'),group:b.group};
  });
 }
+
+/* Normalize only dates/times, never rewrite company names, titles, RE or Q&A. */
+const MONTH_NUMBER={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+const CAREER_DATE_RX=/^(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+(\d{4})\s*(?:-|–|—|～|~|to)\s*(Present|Current|Now|現在|現職|(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?)\s+\d{4})\s*(?:[|｜]\s*)?(.*)$/i;
+function careerDate(str){
+ const x=str.match(/^([A-Za-z]+)\s+(\d{4})$/),m=x&&MONTH_NUMBER[x[1].slice(0,3).toLowerCase()];
+ return m?x[2]+'.'+m:null;
+}
+function careerDateRange(str){
+ const m=str.trim().match(CAREER_DATE_RX);if(!m)return null;
+ const start=careerDate(m[1]+' '+m[2]);
+ const end=/^(?:Present|Current|Now|現在|現職)$/i.test(m[3])?'現在':careerDate(m[3]);
+ return start&&end?{date:start+'～'+end,detail:m[4].trim()}:null;
+}
+function formatCareerHistory(value){
+ const lines=String(value||'').split(/\r?\n/),out=[];
+ for(let i=0;i<lines.length;i++){
+  const line=lines[i].trim();if(!line)continue;
+  const date=careerDateRange(line);
+  if(!date){out.push(line);continue;}
+  let detail=date.detail;
+  if(!detail&&i+1<lines.length&&!careerDateRange(lines[i+1])){
+   const next=lines[i+1].trim();
+   if(next&&!/^(?:Employment History|Availability|Time Zone|Hourly Fee|This specialist|Request Availability)/i.test(next)){
+    detail=next;i++;
+   }
+  }
+  detail=detail.replace(/\s*[|｜]\s*/g,'｜').replace(/\s+[-–—]\s+/,'｜').replace(/^｜+|｜+$/g,'').trim();
+  out.push(date.date+(detail?'｜'+detail:''));
+ }
+ return out.join('\n').trim();
+}
+const AVAIL_WEEKDAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+function availabilityOffset(zone){
+ const m=String(zone||'').match(/(?:GMT|UTC)\s*([+\-−])\s*(\d{1,2})(?::?(\d{2}))?/i);
+ if(m){
+  const h=Number(m[2]),minute=Number(m[3]||0);
+  return h>14||minute>=60?null:(m[1]==='+'?1:-1)*(h*60+minute);
+ }
+ if(/Asia\/Tokyo|Japan Standard Time|\bJST\b|Tokyo|東京/i.test(zone))return 540;
+ if(/Asia\/Hong_Kong|Asia\/Shanghai|\bHKT\b/i.test(zone))return 480;
+ return null;
+}
+function availabilityYear(month,day,explicit){
+ if(explicit)return Number(explicit);
+ const now=new Date(Date.now()+540*60000),base=Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate());
+ const y=now.getUTCFullYear();
+ const candidates=[y-1,y,y+1].filter(year=>{
+  const d=new Date(Date.UTC(year,month-1,day));
+  return d.getUTCMonth()===month-1&&d.getUTCDate()===day;
+ });
+ candidates.sort((a,b)=>Math.abs(Date.UTC(a,month-1,day)-base)-Math.abs(Date.UTC(b,month-1,day)-base));
+ return candidates[0]||y;
+}
+function clockMinutes(t){
+ const m=String(t||'').trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+ if(!m)return null;
+ let hour=Number(m[1]),minute=Number(m[2]);
+ if(minute>=60)return null;
+ if(m[3]){if(hour<1||hour>12)return null;hour=hour%12+(m[3].toUpperCase()==='PM'?12:0)}
+ else if(hour>24||hour===24&&minute!==0)return null;
+ return hour*60+minute;
+}
+function availDate(ms){
+ const d=new Date(ms),pad=n=>String(n).padStart(2,'0');
+ return {
+  day:d.getUTCFullYear()+'-'+pad(d.getUTCMonth()+1)+'-'+pad(d.getUTCDate())+' ('+AVAIL_WEEKDAYS[d.getUTCDay()]+')',
+  minute:d.getUTCHours()*60+d.getUTCMinutes(),
+  midnight:Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate())
+ };
+}
+function time24(t){return String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0')}
+function availWindow(year,month,day,start,end,sourceOffset){
+ const shift=(540-(sourceOffset===null?540:sourceOffset))*60000;
+ const base=Date.UTC(year,month-1,day)+shift;
+ const a=availDate(base+start*60000),b=availDate(base+(end<=start?end+1440:end)*60000);
+ if(a.day===b.day)return a.day+' '+time24(a.minute)+'～'+time24(b.minute);
+ if(b.minute===0&&b.midnight===a.midnight+86400000)return a.day+' '+time24(a.minute)+'～24:00';
+ return a.day+' '+time24(a.minute)+'～'+b.day+' '+time24(b.minute);
+}
+function formatAvailabilityForExport(value){
+ const src=String(value||'').trim();
+ if(!src||/^(?:日本時間（JST|タイムゾーン未確認)/.test(src)||/has not yet provided any availability|no availability available/i.test(src))return src;
+ const lines=src.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+ const zone=lines.find(s=>/^Time\s*Zone\s*[:：]/i.test(s))||'';
+ const offset=availabilityOffset(zone);
+ const head=offset===540?'日本時間（JST）':offset===null?'タイムゾーン未確認（原文の時刻・JST換算なし）':'日本時間（JST、元：'+zone.replace(/^Time\s*Zone\s*[:：]\s*/i,'')+'）';
+ const output=[],leftovers=[];
+ const dateRx=/^(Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sun|Mon|Tue|Wed|Thu|Fri|Sat),?\s+(\d{1,2})\s+([A-Za-z]+)\.?\s+(?:(\d{4})\s+)?(.+)$/i;
+ const timeRx=/(\d{1,2}:\d{2}\s*(?:AM|PM)?)\s*(?:-|–|—|～|~|to)\s*(\d{1,2}:\d{2}\s*(?:AM|PM)?)/gi;
+ for(const line of lines){
+  if(/^Time\s*Zone\s*[:：]/i.test(line))continue;
+  const m=line.match(dateRx),mon=m&&MONTH_NUMBER[m[3].slice(0,3).toLowerCase()];
+  if(!m||!mon){leftovers.push(line);continue}
+  const year=availabilityYear(mon,Number(m[2]),m[4]);
+  const windows=[...m[5].matchAll(timeRx)];
+  if(!windows.length){leftovers.push(line);continue}
+  for(const w of windows){
+   const start=clockMinutes(w[1]),end=clockMinutes(w[2]);
+   if(start===null||end===null){leftovers.push(line);continue}
+   output.push(availWindow(year,mon,Number(m[2]),start,end,offset));
+  }
+ }
+ return output.length?[head,...output,...leftovers].join('\n'):src;
+}
+
 function parseHistory(text){const lines=normalizeText(text).split('\n').filter(s=>!isSep(s));let out=[];
  for(let s of lines){let raw=s.trim();if(!raw||/^Employment History/i.test(cleanLine(raw)))continue;
  let cells=raw.split('|').map(x=>cleanLine(x)).filter(x=>x&&x!=='-');
@@ -231,7 +337,7 @@ function parseHistory(text){const lines=normalizeText(text).split('\n').filter(s
    out.push(cells[0]+' - '+cells[1]+' | '+cells.slice(2).join(' | '));
  } else {let candidate=cleanLine(raw);if(candidate&&!/^Time Zone/i.test(candidate))out.push(candidate)}
  }
- return out.join('\n').trim();}
+ return formatCareerHistory(out.join('\n').trim());}
 function findIndex(lines,re,from=0){for(let i=from;i<lines.length;i++)if(re.test(cleanLine(lines[i])))return i;return -1}
 // Expert Listの原文にはScreening Update / Screened on / # Screening date /
 // Q. / Q: / Q1: などが混在する。日付や特定の案件名に依存しない。
@@ -280,6 +386,7 @@ function parseSingle(section){let raw=normalizeText(section.body);let lines=raw.
  let availability=avIdx>=0?tidySection(['Time Zone: (GMT+09:00) Tokyo'].filter(()=>false).concat(avLines).join('\n')):'';
  if(avIdx>=0){let embedded=cleanLine(lines[avIdx]);let after=embedded.replace(/^(?:Availability|アベイラビリティ)\s*[:：]?/i,'').trim();if(after)availability=tidySection(after+'\n'+availability)}
  if(avIdx<0){const noAvail=findIndex(lines,/^This specialist has not yet provided any availability\.?$/i);if(noAvail>=0)availability=cleanLine(lines[noAvail]);}
+ availability=formatAvailabilityForExport(availability);
  let full=raw+'\n'+String(section.header||'');let fee='';let feeMatch=full.match(/Hourly\s*Fee\s*[:：]\s*(USD|JPY|EUR|GBP|\$|¥)?\s*([\d,]+(?:\.\d{1,2})?)/i);
  if(feeMatch)fee=(feeMatch[1]||'')+feeMatch[2].replaceAll(',','');
  let city=full.match(/This specialist is based in\s+([^\n|.]+(?:\([^\n|]+\))?)/i);
@@ -324,7 +431,7 @@ function columnName(n){let v='';for(n++;n>0;n=Math.floor((n-1)/26)){v=String.fro
 function sheetXml(rows){const colWidths=[28,54,90,106,19,55,58];let xml='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">';
  xml+='<dimension ref="A1:G'+(rows.length+1)+'"/><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><sheetFormatPr defaultRowHeight="16"/><cols>';
  colWidths.forEach((w,i)=>xml+='<col min="'+(i+1)+'" max="'+(i+1)+'" width="'+w+'" customWidth="1"/>');xml+='</cols><sheetData>';
- const data=[HEADERS,...rows];data.forEach((row,i)=>{const n=i+1;xml+='<row r="'+n+'" ht="'+(i===0?35:210)+'" customHeight="1">';row.forEach((value,j)=>{let v=xmlEscape(checkXmlText(value));xml+='<c r="'+columnName(j)+n+'" s="'+(i===0?'1':'2')+'" t="inlineStr"><is><t xml:space="preserve">'+v+'</t></is></c>';});xml+='</row>';});
+ const data=[HEADERS,...rows];data.forEach((row,i)=>{const n=i+1;xml+='<row r="'+n+'" ht="'+(i===0?35:210)+'" customHeight="1">';row.forEach((value,j)=>{let cellValue=j===1?formatCareerHistory(value):j===5?formatAvailabilityForExport(value):value;let v=xmlEscape(checkXmlText(cellValue));xml+='<c r="'+columnName(j)+n+'" s="'+(i===0?'1':'2')+'" t="inlineStr"><is><t xml:space="preserve">'+v+'</t></is></c>';});xml+='</row>';});
  xml+='</sheetData><autoFilter ref="A1:G'+Math.max(1,data.length)+'"/><pageMargins left="0.3" right="0.3" top="0.4" bottom="0.4" header="0.2" footer="0.2"/></worksheet>';return xml;}
 // Excel is stricter than Google Sheets about workbook sheet names.
 // Validate at the final OOXML-writing boundary, independently of the Angle parser.
