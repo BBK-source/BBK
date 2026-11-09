@@ -25,7 +25,6 @@ export default function RootLayout({
       <body>
         {children}
         <Script src={`${basePath}/analytics.js`} strategy="afterInteractive" />
-        <Script src={`${basePath}/feedback.js`} strategy="afterInteractive" />
       </body>
     </html>
   );

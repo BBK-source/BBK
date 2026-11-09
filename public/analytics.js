@@ -3,7 +3,7 @@
   // BBK tools GA4: automatic page analytics plus predefined, non-content events.
   // Never read or transmit expert profiles, email text, filenames, or search queries.
   var MEASUREMENT_ID = 'G-H7XSR2EKTS';
-  var EVENTS = { mail_copy: true, profile_parse: true, excel_export: true, tool_switch: true, feedback_like: true };
+  var EVENTS = { mail_copy: true, profile_parse: true, excel_export: true, tool_switch: true };
   var tool = location.pathname.indexOf('/expert-profile-excel/') >= 0 ? 'expert_excel' : 'bbk_bunken';
   var pageName = tool === 'expert_excel' ? 'Expert Profile Excel Tool' : 'BBK Bunken';
   var safePageLocation = location.origin + location.pathname;
