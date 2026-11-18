@@ -38,12 +38,54 @@ function parseCharges(text){
 function normalizedName(s){return String(s||'').normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]/gu,'');}
 function expertName(e){return String(e.name||'').replace(/^#(?:\d+\.\d+[A-Za-z]*)?\s*[-–—]\s*/,'').split(/\s+[-–—]\s+(?=Former|Current|✅|Screened)/i)[0].trim();}
 function expertNo(e){return (String(e.name||'').match(/^(#\d+\.\d+[A-Za-z]*)\s*[-–—]/i)||[])[1]||'';}
+function careerRowsFromHistory(history){
+ // Handle both normalized records and markdown table rows split by <br>.
+ const lines=String(history||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+ const records=[];
+ function companyRole(text){
+  const parts=text.split(/\s*\|\s*-\s*\|\s*|\s*｜\s*/).map(x=>x.trim()).filter(Boolean);
+  if(parts.length>=2)return {company:parts[0],role:parts.slice(1).join('｜')};
+  const dashed=text.split(/\s+[-–—]\s+/);
+  if(dashed.length>=2)return {company:dashed[0].trim(),role:dashed.slice(1).join(' - ').trim()};
+  return null;
+ }
+ for(let i=0;i<lines.length;i++){
+  const line=lines[i];
+  let range='',detail='';
+  const normalized=line.match(/^(\d{4}\.\d{1,2}～(?:現在|\d{4}\.\d{1,2}))\s*[｜|]\s*(.+)$/);
+  if(normalized){range=normalized[1];detail=normalized[2];}
+  else{
+   const cleaned=line.replace(/\s*\|\s*-\s*\|\s*/g,' - ');
+   const date=careerDateRange(cleaned);
+   if(!date)continue;
+   range=date.date;detail=date.detail;
+   if(!detail&&i+1<lines.length){
+    const next=lines[i+1];
+    if(!careerDateRange(next.replace(/\s*\|\s*-\s*\|\s*/g,' - '))){
+     detail=next;i++;
+    }
+   }
+  }
+  const fields=companyRole(detail);
+  if(fields&&fields.company&&fields.role)
+   records.push({range,company:fields.company,role:fields.role});
+ }
+ return records.sort((a,b)=>{
+  const value=x=>{const m=x.range.match(/^(\d{4})\.(\d{1,2})/);return m?+m[1]*12+(+m[2]):0};
+  return value(a)-value(b);
+ });
+}
 function expertCompanyRole(e){
+ const history=careerRowsFromHistory(e.history);
+ if(history.length){
+  return {
+   company:history.map(r=>r.company+'（'+r.range+'）').join('\n'),
+   role:history.map(r=>r.role+'（'+r.range+'）').join('\n')
+  };
+ }
  const first=String(e.raw||'').split(/\r?\n/).find(x=>/\b(?:Former|Current)\b.+\bat\b/i.test(x))||'';
  const m=first.match(/\b(?:Former|Current)\s+(.+?)\s+at\s+(.+?)(?=\s*\(\d\d\/\d{4}\b|$)/i);
  if(m)return {company:m[2].replace(/\*+/g,'').trim(),role:m[1].replace(/[*✅✔]/g,'').trim()};
- const fallback=String(e.history||'').split(/\r?\n/).find(x=>x.includes('｜'));
- if(fallback){const p=fallback.split('｜');return {company:(p[1]||'').trim(),role:(p[2]||'').trim()};}
  return {company:'',role:''};
 }
 function matched(c,list){
@@ -62,7 +104,7 @@ function excelDate(day){
  return Math.round((Date.UTC(a[0],a[1]-1,a[2])-Date.UTC(1899,11,30))/86400000);
 }
 function billingWorksheet(rows){
- const widths=[14,38,19,25,46,45,16,18];
+ const widths=[14,38,19,25,52,60,16,18];
  let s='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
  +'<dimension ref="A1:H'+(rows.length+1)+'"/><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>'
  +'<sheetFormatPr defaultRowHeight="17"/><cols>';
@@ -73,7 +115,10 @@ function billingWorksheet(rows){
  columns.forEach((name,i)=>s+=stringCell(columnName(i),1,name,1));
  s+='</row>';
  rows.forEach((r,i)=>{
-  const n=i+2;s+='<row r="'+n+'" ht="44" customHeight="1">';
+  const n=i+2;
+  const lines=Math.max(String(r.company||'').split('\n').length,String(r.role||'').split('\n').length);
+  const ht=Math.min(390,Math.max(44,lines*29));
+  s+='<row r="'+n+'" ht="'+ht+'" customHeight="1">';
   [['A',r.number],['B',r.project]].forEach(([col,value])=>s+=stringCell(col,n,value,2));
   s+='<c r="C'+n+'" s="3"><v>'+excelDate(r.date)+'</v></c>';
   [['D',r.name],['E',r.company],['F',r.role]].forEach(([col,value])=>s+=stringCell(col,n,value,2));
@@ -117,10 +162,10 @@ panel.innerHTML='<h2>インタビュー実施・請求管理</h2>'
 +'<div class="row" style="justify-content:space-between;margin-top:18px"><h2>照合結果</h2><span id="billingSummary" class="fine"></span></div>'
 +'<div class="tablewrap"><table class="billingTable"><thead><tr><th>エキスパート</th><th>Charge Date</th><th>Description</th><th>Duration</th><th>Price</th><th>企業名</th><th>職位</th><th>照合</th></tr></thead><tbody id="billingRows"></tbody></table></div>'
 +'<div class="controls"><button class="btn primary" id="billingDownload" disabled>顧客向けExcelをダウンロード (.xlsx)</button><span id="billingStatus" class="fine"></span></div>'
-+'<p class="fine">Charge Date＝ご実施日。所要時間・請求金額はCharge明細を使用。Total行は含めません。</p>';
++'<p class="fine">Charge Date＝ご実施日。企業・職位はProfileの全職歴を年月付きで反映（編集可）。所要時間・請求金額はCharge明細を使用。Total行は含めません。</p>';
 tabs.insertAdjacentElement('afterend',panel);
 const style=node('style');
-style.textContent='.billingNav{display:flex;gap:8px;flex-wrap:wrap;margin:-3px 0 16px}.billingGrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.billingPanel textarea{min-height:185px;font-size:12px}.billingTable{min-width:1040px}.billingTable td,.billingTable th{padding:8px;font-size:12px;vertical-align:top}.billingTable select{min-width:165px}.billingTable input{min-width:175px}@media(max-width:760px){.billingGrid{grid-template-columns:1fr}}';
+style.textContent='.billingNav{display:flex;gap:8px;flex-wrap:wrap;margin:-3px 0 16px}.billingGrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.billingPanel textarea{min-height:185px;font-size:12px}.billingTable{min-width:1040px}.billingTable td,.billingTable th{padding:8px;font-size:12px;vertical-align:top}.billingTable select{min-width:165px}.billingTable textarea{min-width:270px;max-width:420px;min-height:125px;font-size:11px;line-height:1.6;resize:vertical;white-space:pre-wrap}@media(max-width:760px){.billingGrid{grid-template-columns:1fr}}';
 document.head.append(style);
 const $=id=>document.getElementById(id),profileInput=$('billingProfiles'),chargeInput=$('billingCharges'),rowsNode=$('billingRows'),summary=$('billingSummary'),notice=$('billingStatus'),downloadButton=$('billingDownload');
 function display(){
@@ -152,9 +197,9 @@ function render(){
   if(e)select.value=expertName(e);
   select.onchange=()=>{c.selected=select.value;c.company=null;c.role=null;render()};
   cell(select);cell(c.date);cell(c.description);cell(c.duration+' h');cell(c.price.toFixed(2)+' '+c.currency);
-  const company=node('input',{type:'text',placeholder:'企業名'});company.value=mapped[i]?mapped[i].company:'';
+  const company=node('textarea',{placeholder:'企業名・年月（編集可）',rows:'4'});company.value=mapped[i]?mapped[i].company:'';
   company.oninput=()=>{c.company=company.value};cell(company);
-  const role=node('input',{type:'text',placeholder:'職位'});role.value=mapped[i]?mapped[i].role:'';
+  const role=node('textarea',{placeholder:'職位・年月（編集可）',rows:'4'});role.value=mapped[i]?mapped[i].role:'';
   role.oninput=()=>{c.role=role.value};cell(role);
   cell(mapped[i]?'照合済み':'未照合');rowsNode.append(tr);
  });
