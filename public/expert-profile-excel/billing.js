@@ -1,7 +1,7 @@
 (function(){
 'use strict';
 const columns=['候補者No','プロジェクト名/コード','ご実施日','エキスパート名','企業名','職位','所要時間','請求金額'];
-const projectDefault='4分野におけるスキル標準整備 / 6724';
+const projectDefault='4分野におけるスキル標準整備 / 10044081.1.2';
 let charges=[],billingActive=false;
 function chargeDate(raw){
  const m=String(raw).match(/^(\d{4})[-\/](\d\d)[-\/](\d\d)(?:[ T]\d\d:\d\d(?::\d\d)?)?/);
@@ -51,9 +51,9 @@ function matched(c,list){
  const matches=list.filter(e=>normalizedName(expertName(e))===key);
  return matches.length===1?matches[0]:null;
 }
-function toRow(c,list,project){
+function toRow(c,list){
  const e=matched(c,list);if(!e)return null;const cr=expertCompanyRole(e);
- return {number:expertNo(e),project,date:c.date,name:expertName(e),
+ return {number:expertNo(e),project:projectDefault,date:c.date,name:expertName(e),
  company:c.company===null?cr.company:c.company,role:c.role===null?cr.role:c.role,
  duration:c.duration,price:c.price,currency:c.currency};
 }
@@ -113,7 +113,7 @@ panel.innerHTML='<h2>インタビュー実施・請求管理</h2>'
 +'<div><label for="billingCharges">② Charge明細</label>'
 +'<textarea id="billingCharges" placeholder="Charge Date | Description | Duration | Price&#10;2026-11-11 11:37:38 | 30min consultation with Katsumi Masumoto | 0.5 h | 885.00 USD"></textarea>'
 +'<div class="controls"><button class="btn" id="billingParseCharges">Chargeを解析・照合</button><button class="btn small" id="billingClearCharges">明細をクリア</button></div></div></div>'
-+'<div class="controls" style="margin-top:12px"><label for="billingProject" style="margin:0">プロジェクト名/コード</label><input id="billingProject" class="input" style="max-width:380px" value="4分野におけるスキル標準整備 / 6724"></div>'
++'<div class="controls" style="margin-top:12px"><label for="billingProject" style="margin:0">プロジェクト名/コード（固定）</label><input id="billingProject" class="input" style="max-width:420px" value="4分野におけるスキル標準整備 / 10044081.1.2" readonly></div>'
 +'<div class="row" style="justify-content:space-between;margin-top:18px"><h2>照合結果</h2><span id="billingSummary" class="fine"></span></div>'
 +'<div class="tablewrap"><table class="billingTable"><thead><tr><th>エキスパート</th><th>Charge Date</th><th>Description</th><th>Duration</th><th>Price</th><th>企業名</th><th>職位</th><th>照合</th></tr></thead><tbody id="billingRows"></tbody></table></div>'
 +'<div class="controls"><button class="btn primary" id="billingDownload" disabled>顧客向けExcelをダウンロード (.xlsx)</button><span id="billingStatus" class="fine"></span></div>'
@@ -122,7 +122,7 @@ tabs.insertAdjacentElement('afterend',panel);
 const style=node('style');
 style.textContent='.billingNav{display:flex;gap:8px;flex-wrap:wrap;margin:-3px 0 16px}.billingGrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.billingPanel textarea{min-height:185px;font-size:12px}.billingTable{min-width:1040px}.billingTable td,.billingTable th{padding:8px;font-size:12px;vertical-align:top}.billingTable select{min-width:165px}.billingTable input{min-width:175px}@media(max-width:760px){.billingGrid{grid-template-columns:1fr}}';
 document.head.append(style);
-const $=id=>document.getElementById(id),profileInput=$('billingProfiles'),chargeInput=$('billingCharges'),rowsNode=$('billingRows'),summary=$('billingSummary'),notice=$('billingStatus'),downloadButton=$('billingDownload'),projectInput=$('billingProject');
+const $=id=>document.getElementById(id),profileInput=$('billingProfiles'),chargeInput=$('billingCharges'),rowsNode=$('billingRows'),summary=$('billingSummary'),notice=$('billingStatus'),downloadButton=$('billingDownload');
 function display(){
  const special=mode==='special';tabs.style.display=special?'flex':'none';
  if(!special)billingActive=false;
@@ -138,8 +138,7 @@ function display(){
  if(hide)render();
 }
 function render(){
- const p=projectInput.value.trim()||projectDefault;
- const mapped=charges.map(c=>toRow(c,entries,p));
+ const mapped=charges.map(c=>toRow(c,entries));
  const count=mapped.filter(Boolean).length;
  summary.textContent='Profile '+entries.length+'名 ／ Charge '+charges.length+'件 ／ 照合 '+count+'件';
  rowsNode.replaceChildren();
@@ -176,9 +175,8 @@ $('billingAddProfiles').onclick=()=>{
 };
 $('billingParseCharges').onclick=()=>{charges=parseCharges(chargeInput.value);render();notice.textContent=charges.length?charges.length+'件のChargeを解析しました。':'Charge明細を読み取れませんでした。';};
 $('billingClearCharges').onclick=()=>{charges=[];chargeInput.value='';render();notice.textContent='';};
-projectInput.addEventListener('change',render);
 downloadButton.onclick=()=>{
- const rows=charges.map(c=>toRow(c,entries,projectInput.value.trim()||projectDefault));
+ const rows=charges.map(c=>toRow(c,entries));
  if(!rows.length||rows.some(r=>!r)){notice.textContent='未照合のエキスパートを選択してください。';return}
  try{const now=new Date(),pad=n=>String(n).padStart(2,'0');
   const filename='BCG_インタビュー実施請求一覧_'+now.getFullYear()+pad(now.getMonth()+1)+pad(now.getDate())+'.xlsx';
