@@ -75,12 +75,17 @@ function careerRowsFromHistory(history){
   return value(a)-value(b);
  });
 }
+function formatCareerPeriod(period){
+ return String(period||'').replace(/(\d{4})\.(\d{1,2})/g,(_,year,month)=>year+'年'+Number(month)+'月');
+}
 function expertCompanyRole(e){
  const history=careerRowsFromHistory(e.history);
  if(history.length){
+  // Show the complete recorded career (including earlier European posts).
+  // Preserve overlaps and distinguish employers rather than treating sales partners as subsidiaries.
   return {
-   company:history.map(r=>r.company+'（'+r.range+'）').join('\n'),
-   role:history.map(r=>r.role+'（'+r.range+'）').join('\n')
+   company:history.map(r=>r.company+'（'+formatCareerPeriod(r.range)+'）').join('\n'),
+   role:history.map(r=>r.role+'（'+formatCareerPeriod(r.range)+'）').join('\n')
   };
  }
  const first=String(e.raw||'').split(/\r?\n/).find(x=>/\b(?:Former|Current)\b.+\bat\b/i.test(x))||'';
